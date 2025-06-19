@@ -81,7 +81,7 @@ module PgInsights
         { category: "all", label: "All", active: true },
         { category: "database", label: "Database", active: false },
         { category: "business", label: "Business", active: false },
-        { category: "sample", label: "Sample", active: false }
+        { category: "saved", label: "Saved", active: false }
       ]
     end
 

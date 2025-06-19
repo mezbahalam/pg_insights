@@ -11,6 +11,12 @@ document.addEventListener('DOMContentLoaded', function() {
       queries: [],
       savedQueries: []
     },
+    // Keep track of the currently loaded query
+    currentQueryState: {
+      id: null,
+      type: null, // 'built-in' or 'saved'
+      name: ''
+    },
 
     // Initialize the application
     init() {
@@ -58,45 +64,72 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     },
 
-    // Save current query functionality
+    // Save or Update the current query
     saveCurrentQuery() {
       const textarea = document.querySelector('.sql-editor');
+      const sql = textarea?.value.trim();
+      if (!sql) return;
+
+      const isUpdate = this.currentQueryState.type === 'saved';
+      let name;
+
+      if (isUpdate) {
+        name = prompt("Update query name, or confirm current name:", this.currentQueryState.name);
+      } else {
+        name = prompt("Enter a name for this new saved query:");
+      }
+
+      if (!name) return; // User cancelled prompt
+
+      const method = isUpdate ? 'PATCH' : 'POST';
+      const url = isUpdate ? `/pg_insights/queries/${this.currentQueryState.id}` : '/pg_insights/queries';
+
+      const body = {
+        query: {
+          name: name.trim(),
+          sql: sql,
+          // For now, description is not editable in the UI
+          description: isUpdate ? (this.currentQueryState.description || '') : 'User saved query',
+          category: 'saved'
+        }
+      };
+
       const btn = document.querySelector('.btn-icon.btn-save');
-      
-      if (!textarea?.value.trim()) return;
-      
-      const name = prompt('Enter query name:');
-      if (!name) return;
-      
       btn.disabled = true;
       btn.textContent = '⏳';
-      
-      // Save to server
-      fetch('/pg_insights/save_query', {
-        method: 'POST',
+
+      fetch(url, {
+        method: method,
         headers: {
           'Content-Type': 'application/json',
           'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
         },
-        body: JSON.stringify({
-          name: name.trim(),
-          sql: textarea.value.trim()
-        })
+        body: JSON.stringify(body)
       })
-      .then(response => response.json())
+      .then(response => {
+        if (!response.ok) {
+          return response.json().then(err => { throw err; });
+        }
+        return response.json();
+      })
       .then(data => {
-        btn.textContent = data.success ? '✓' : '✗';
-        setTimeout(() => {
-          btn.disabled = false;
-          btn.textContent = '💾';
-        }, 1000);
+        if (data.success) {
+          btn.textContent = '✓';
+          location.reload(); // Easiest way to show updated query list
+        }
       })
-      .catch(() => {
+      .catch(error => {
+        console.error('Save query error:', error);
         btn.textContent = '✗';
+        const errorMessage = error.errors ? error.errors.join(', ') : 'A server error occurred.';
+        alert(`Failed to save query: ${errorMessage}`);
+        
+        // Restore button after a delay on failure
         setTimeout(() => {
           btn.disabled = false;
-          btn.textContent = '💾';
-        }, 1000);
+          const icon = this.currentQueryState.type === 'saved' ? '📝' : '💾';
+          btn.textContent = icon;
+        }, 2000);
       });
     },
 
@@ -184,6 +217,16 @@ document.addEventListener('DOMContentLoaded', function() {
         textarea.focus();
         this.validateAndUpdateUI('');
       }
+      
+      // Reset state
+      this.currentQueryState = { id: null, type: null, name: '' };
+      
+      // Reset save button
+      const saveBtn = document.querySelector('.btn-icon.btn-save');
+      if (saveBtn) {
+          saveBtn.innerHTML = '💾';
+          saveBtn.title = 'Save query';
+      }
     },
 
     // Load table names for preview dropdown
@@ -244,16 +287,30 @@ document.addEventListener('DOMContentLoaded', function() {
     },
 
     loadQueryById(queryId) {
-      
-      // Check saved queries and default queries
-      let query = this.config.savedQueries.find(q => q.id === queryId);
-      if (!query) {
-        query = this.config.queries.find(q => q.id === queryId);
-      }
+      const query = this.config.queries.find(q => q.id.toString() === queryId.toString());
       
       if (!query) {
         console.error('Query not found:', queryId);
         return;
+      }
+
+      // Set current state
+      this.currentQueryState.id = query.id;
+      this.currentQueryState.name = query.name;
+      this.currentQueryState.description = query.description;
+      // Database IDs are numbers, built-in IDs are strings
+      this.currentQueryState.type = (typeof query.id === 'number') ? 'saved' : 'built-in';
+      
+      // Update save button
+      const saveBtn = document.querySelector('.btn-icon.btn-save');
+      if (saveBtn) {
+          if (this.currentQueryState.type === 'saved') {
+              saveBtn.innerHTML = '📝';
+              saveBtn.title = 'Update saved query';
+          } else {
+              saveBtn.innerHTML = '💾';
+              saveBtn.title = 'Save query as new';
+          }
       }
 
       const textarea = document.querySelector('.sql-editor');
@@ -297,7 +354,6 @@ document.addEventListener('DOMContentLoaded', function() {
       document.querySelectorAll('.query-example-btn').forEach(button => {
         button.addEventListener('click', () => {
           const queryId = button.getAttribute('data-query-id');
-          console.log('Query button clicked, ID:', queryId);
           if (queryId) {
             this.loadQueryById(queryId);
           }
@@ -373,25 +429,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       }
     },
-
-    saveQuery(name, sql) {
-      // Basic validation
-      if (!name || !sql) return;
-
-      fetch('/pg_insights/insights/save_query', {
-        method: 'POST',
-        headers: this.headers,
-        body: JSON.stringify({ name, sql })
-      })
-      .then(response => response.json())
-      .then(data => {
-        // Handle the response from the server
-        console.log(data);
-      })
-      .catch(error => {
-        console.error('Failed to save query:', error);
-      });
-    }
   };
 
   // Initialize the application

@@ -597,9 +597,9 @@
     color: #0c4a6e;
   }
 
-  &.sample {
+  &.saved {
     background: #fef2f2;
-    color: #991b1b;
+    color: #00979d;
   }
 }
 

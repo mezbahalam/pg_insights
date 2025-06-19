@@ -10,7 +10,7 @@ module PgInsights
     def create
       @query = PgInsights::Query.new(query_params)
       if @query.save
-        render json: { success: true, query: @query.as_json(only: [ :id, :name, :sql, :description ]) }, status: :created
+        render json: { success: true, query: @query.as_json(only: [ :id, :name, :sql, :description, :category ]) }, status: :created
       else
         render json: { success: false, errors: @query.errors.full_messages }, status: :unprocessable_entity
       end
@@ -19,7 +19,7 @@ module PgInsights
     # PATCH/PUT /pg_insights/queries/:id
     def update
       if @query.update(query_params)
-        render json: { success: true, query: @query.as_json(only: [ :id, :name, :sql, :description ]) }
+        render json: { success: true, query: @query.as_json(only: [ :id, :name, :sql, :description, :category ]) }
       else
         render json: { success: false, errors: @query.errors.full_messages }, status: :unprocessable_entity
       end
