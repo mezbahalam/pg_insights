@@ -1,0 +1,32 @@
+<div class="query-examples-section">
+  <div class="examples-header">
+    <span class="examples-label">Query Examples</span>
+    <div class="category-filters">
+      <% filter_buttons_data.each do |filter| %>
+        <button type="button" 
+                class="filter-btn <%= 'active' if filter[:active] %>" 
+                data-category="<%= filter[:category] %>">
+          <%= filter[:label] %>
+        </button>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="query-examples-grid">
+    <% @insight_queries.each do |query| %>
+      <button type="button"
+              class="query-example-btn"
+              data-query-id="<%= query['id'] %>"
+              data-category="<%= query['category'] %>"
+              title="<%= query['description'] %>">
+        <div class="query-btn-content">
+          <span class="query-name"><%= query['name'] %></span>
+          <span class="query-desc"><%= query['description'] %></span>
+          <span class="<%= query_category_badge_class(query['category']) %>">
+            <%= query['category'].titleize %>
+          </span>
+        </div>
+      </button>
+    <% end %>
+  </div>
+</div>

@@ -19,4 +19,5 @@ Gem::Specification.new do |spec|
   end
 
   spec.add_dependency "rails", ">= 6.1"
+  spec.add_dependency "chartkick", "~> 5.1"
 end

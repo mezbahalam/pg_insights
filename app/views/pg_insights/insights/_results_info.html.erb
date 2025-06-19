@@ -1,0 +1,19 @@
+<div class="results-info">
+  <div class="results-meta">
+    <%= "#{@result.rows.size} records • #{@result.columns.size} columns" if @result %>
+  </div>
+
+  <div class="view-toggle">
+    <button type="button" class="toggle-btn active" data-view="table">
+      <span class="toggle-icon">📊</span> Table
+    </button>
+    <% if should_show_chart?(@result) %>
+      <button type="button" class="toggle-btn" data-view="chart">
+        <span class="toggle-icon">📈</span> Chart
+      </button>
+    <% end %>
+    <button type="button" class="toggle-btn" data-view="stats">
+      <span class="toggle-icon">📋</span> Stats
+    </button>
+  </div>
+</div>

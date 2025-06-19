@@ -1,0 +1,15 @@
+<% if @result.present? %>
+  <div class="results-section">
+    <%= render "results_info" %>
+    <%= render "chart_view" %>
+    <%= render "stats_view" %>
+    <%= render "table_view" %>
+  </div>
+<% elsif flash.now[:alert] %>
+  <div class="results-section">
+    <div class="error-message">
+      <span class="error-icon">⚠️</span>
+      <strong>Error:</strong> <%= flash.now[:alert] %>
+    </div>
+  </div>
+<% end %>

@@ -1,0 +1,45 @@
+<div class="table-wrapper">
+  <div id="tableScroll" class="table-scroll" tabindex="0">
+    <table id="resultsTable" class="results-table">
+      <!-- Sticky Header -->
+      <thead class="sticky-header">
+        <tr>
+          <th class="row-num">#</th>
+          <% @result.columns.each_with_index do |column, index| %>
+            <th data-column="<%= index + 1 %>">
+              <div class="table-header-content">
+                <span class="header-text"><%= column %></span>
+                <span class="header-type">text</span>
+              </div>
+            </th>
+          <% end %>
+        </tr>
+      </thead>
+
+      <!-- Table Body -->
+      <tbody>
+        <% @result.rows.each_with_index do |row, row_index| %>
+          <tr class="<%= 'even-row' if row_index.even? %>">
+            <td class="row-num"><%= row_index + 1 %></td>
+            <% row.each_with_index do |cell, col_index| %>
+              <td data-column="<%= col_index + 1 %>">
+                <span class="cell-content <%= cell_value_class(cell) %>">
+                  <%= format_cell_value(cell) %>
+                </span>
+              </td>
+            <% end %>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Scroll Indicators -->
+  <div id="scrollIndicatorH" class="scroll-indicator scroll-indicator-horizontal">
+    <div id="scrollThumbH" class="scroll-thumb"></div>
+  </div>
+
+  <div id="scrollIndicatorV" class="scroll-indicator scroll-indicator-vertical">
+    <div id="scrollThumbV" class="scroll-thumb"></div>
+  </div>
+</div>

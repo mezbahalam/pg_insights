@@ -1,0 +1,25 @@
+<% if should_show_chart?(@result) %>
+  <div class="chart-container" id="chart-view" style="display: none;" data-chart-data="<%= prepare_chart_data(@result).to_json %>">
+    <div class="chart-controls">
+      <label class="chart-label">Chart Type:</label>
+      <select id="chartType" class="chart-select">
+        <option value="bar">Bar Chart</option>
+        <option value="line">Line Chart</option>
+        <option value="pie">Pie Chart</option>
+        <option value="area">Area Chart</option>
+      </select>
+    </div>
+
+    <div id="dynamicChart" class="chart-display">
+      <%= render_chart(@result) %>
+    </div>
+  </div>
+<% else %>
+  <div class="chart-container" id="chart-view" style="display: none;">
+    <div class="no-chart-message">
+      <span class="chart-icon">📊</span>
+      <h3>Charts not available</h3>
+      <p>Charts work best with 2-3 columns containing numeric data</p>
+    </div>
+  </div>
+<% end %>

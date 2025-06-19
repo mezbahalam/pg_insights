@@ -1,0 +1,36 @@
+<div class="query-panel">
+  <div class="query-section">
+    <%= form_with url: pg_insights.root_path, method: :post, local: true, class: "query-form" do |f| %>
+      <div class="form-header">
+        <div class="preview-tables-dropdown">
+          <select id="table-preview-select" class="table-select">
+            <option value="">📊 Preview Tables</option>
+          </select>
+        </div>
+        <div class="header-actions">
+          <button type="button" class="btn-icon btn-copy" onclick="copyCurrentQuery()" title="Copy query to clipboard">📋</button>
+          <button type="button" class="btn-icon btn-save" onclick="saveCurrentQuery()" title="Save query">💾</button>
+        </div>
+      </div>
+
+      <div class="form-content">
+        <%= f.text_area :sql,
+                        rows: 12,
+                        class: "sql-editor",
+                        placeholder: sql_placeholder_text,
+                        value: params[:sql] %>
+      </div>
+
+      <div class="form-actions">
+        <%= f.submit "Execute", class: "btn btn-primary", id: "execute-btn" %>
+        <button type="button" class="btn btn-secondary" onclick="clearQuery()">Clear</button>
+      </div>
+
+      <%= render "query_examples" %>
+
+      <div class="query-info">
+        <small>SELECT only • 5s timeout • 1k row limit</small>
+      </div>
+    <% end %>
+  </div>
+</div>

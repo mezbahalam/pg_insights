@@ -1,0 +1,21 @@
+<div class="table-controls">
+  <div class="table-info">
+    <%= "#{@result.rows.size} rows × #{@result.columns.size} columns" if @result %>
+  </div>
+
+  <div class="table-actions">
+    <% if @result && @result.columns.size > 10 %>
+      <button type="button" id="toggleColumns" class="table-btn">
+        <span class="btn-icon">👁️</span> Show/Hide Columns
+      </button>
+    <% end %>
+    
+    <button type="button" id="fitColumns" class="table-btn">
+      <span class="btn-icon">📏</span> Fit Columns
+    </button>
+    
+    <button type="button" id="resetTable" class="table-btn">
+      <span class="btn-icon">🔄</span> Reset
+    </button>
+  </div>
+</div>

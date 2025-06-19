@@ -1,0 +1,5 @@
+<div class="table-container" id="table-view">
+  <%= render "table_controls" %>
+  <%= render "column_panel" if @result && @result.columns.size > 10 %>
+  <%= render "results_table" %>
+</div>

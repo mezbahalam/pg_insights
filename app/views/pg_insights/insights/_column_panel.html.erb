@@ -1,0 +1,18 @@
+<div id="columnPanel" class="column-panel" style="display: none;">
+  <div class="column-panel-header">
+    <h4>Show/Hide Columns</h4>
+    <div class="column-panel-actions">
+      <button type="button" id="showAllColumns" class="panel-btn">Show All</button>
+      <button type="button" id="hideAllColumns" class="panel-btn">Hide All</button>
+    </div>
+  </div>
+
+  <div class="column-checkboxes">
+    <% @result.columns.each_with_index do |column, index| %>
+      <div class="column-checkbox">
+        <input type="checkbox" id="col-<%= index + 1 %>" class="column-toggle" data-column="<%= index + 1 %>" checked>
+        <label for="col-<%= index + 1 %>" class="checkbox-label"><%= column %></label>
+      </div>
+    <% end %>
+  </div>
+</div>
