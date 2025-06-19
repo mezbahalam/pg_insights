@@ -16,14 +16,14 @@
     <% @insight_queries.each do |query| %>
       <button type="button"
               class="query-example-btn"
-              data-query-id="<%= query['id'] %>"
-              data-category="<%= query['category'] %>"
-              title="<%= query['description'] %>">
+              data-query-id="<%= query[:id] %>"
+              data-category="<%= query[:category] %>"
+              title="<%= query[:description] %>">
         <div class="query-btn-content">
-          <span class="query-name"><%= query['name'] %></span>
-          <span class="query-desc"><%= query['description'] %></span>
-          <span class="<%= query_category_badge_class(query['category']) %>">
-            <%= query['category'].titleize %>
+          <span class="query-name"><%= query[:name] %></span>
+          <span class="query-desc"><%= query[:description] %></span>
+          <span class="<%= query_category_badge_class(query[:category]) %>">
+            <%= query[:category].to_s.titleize %>
           </span>
         </div>
       </button>

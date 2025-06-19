@@ -1,0 +1,85 @@
+- id: 'table_sizes'
+  name: 'Table Sizes'
+  description: 'Database table sizes (great for charts!)'
+  category: 'database'
+  sql: >
+    SELECT
+      tablename as "Table Name",
+      pg_total_relation_size(schemaname||'.'||tablename) as "Size (Bytes)"
+    FROM pg_tables
+    WHERE schemaname = 'public'
+    ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC
+    LIMIT 10
+
+- id: 'table_activity'
+  name: 'Table Activity'
+  description: 'Table insert/update/delete statistics'
+  category: 'database'
+  sql: >
+    SELECT
+      schemaname || '.' || relname as "Table",
+      n_tup_ins as "Inserts",
+      n_tup_upd as "Updates",
+      n_tup_del as "Deletes"
+    FROM pg_stat_user_tables
+    WHERE schemaname = 'public'
+    ORDER BY (n_tup_ins + n_tup_upd + n_tup_del) DESC
+    LIMIT 8
+
+- id: 'index_usage'
+  name: 'Index Usage'
+  description: 'Index usage statistics'
+  category: 'database'
+  sql: >
+    SELECT
+      schemaname || '.' || indexrelname as "Index",
+      idx_scan as "Scans",
+      idx_tup_read as "Tuples Read"
+    FROM pg_stat_user_indexes
+    WHERE schemaname = 'public'
+      AND idx_scan > 0
+    ORDER BY idx_scan DESC
+    LIMIT 10
+
+- id: 'unused_indexes'
+  name: 'Unused Indexes'
+  description: 'Indexes that have never been scanned (possible cleanup candidates).'
+  category: 'database'
+  sql: >
+    SELECT
+      schemaname || '.' || indexrelname as "Index",
+      idx_scan as "Scans",
+      pg_size_pretty(pg_relation_size(indexrelid)) as "Index Size"
+    FROM pg_stat_user_indexes
+    WHERE schemaname = 'public' AND idx_scan = 0
+    ORDER BY pg_relation_size(indexrelid) DESC
+    LIMIT 12
+
+- id: 'slowest_queries'
+  name: 'Slowest Queries'
+  description: 'Top slowest queries by mean execution time.'
+  category: 'database'
+  sql: >
+    SELECT
+      query,
+      calls,
+      ROUND(mean_exec_time::numeric,2) as "Mean Time (ms)",
+      ROUND(total_exec_time::numeric,2) as "Total Time (ms)"
+    FROM pg_stat_statements
+    ORDER BY mean_exec_time DESC
+    LIMIT 10
+
+- id: 'table_bloat'
+  name: 'Table Bloat Estimate'
+  description: 'Estimate of wasted space in tables due to bloat.'
+  category: 'database'
+  sql: >
+    SELECT
+      relname as "Table",
+      n_live_tup as "Live Rows",
+      n_dead_tup as "Dead Rows",
+      pg_size_pretty(pg_table_size(relid)) as "Table Size"
+    FROM pg_stat_user_tables
+    WHERE n_dead_tup > 0 AND schemaname = 'public'
+    ORDER BY n_dead_tup DESC
+    LIMIT 10

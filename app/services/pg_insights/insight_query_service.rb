@@ -4,21 +4,17 @@ module PgInsights
       @all_queries ||= new.load_queries
     end
 
-    def self.find_by_id(id)
-      all.find { |query| query["id"] == id }
-    end
-
-    def self.reload!
-      @all_queries = nil
+    def self.find(id)
+      all.find { |q| q[:id] == id }
     end
 
     def load_queries
-      file_path = Rails.root.join("db", "data", "insight_queries.json")
+      file_path = PgInsights::Engine.root.join("config", "default_queries.yml")
       return [] unless File.exist?(file_path)
 
-      JSON.parse(File.read(file_path))["queries"]
-    rescue => e
-      Rails.logger.error "Failed to load insight queries: #{e.message}"
+      YAML.safe_load(File.read(file_path), symbolize_names: true)
+    rescue Psych::SyntaxError => e
+      Rails.logger.error "[PgInsights] Failed to load default_queries.yml: #{e.message}"
       []
     end
   end

@@ -11,7 +11,20 @@ module PgInsights
     # GET /pg_insights
     # POST /pg_insights
     def index
-      @insight_queries = PgInsights::InsightQueryService.all
+      # Combine built-in and user-saved queries for the UI
+      built_in_queries = PgInsights::InsightQueryService.all
+
+      saved_queries = PgInsights::Query.order(updated_at: :desc).map do |q|
+        {
+          id: q.id,
+          name: q.name,
+          sql: q.sql,
+          description: q.description,
+          category: q.category || "saved"
+        }
+      end
+
+      @insight_queries = built_in_queries + saved_queries
 
       return unless request.post?
       sql = params.require(:sql)
@@ -45,38 +58,6 @@ module PgInsights
     rescue ActiveRecord::StatementInvalid, PG::Error => e
       Rails.logger.error "Failed to fetch table names: #{e.message}"
       render json: { tables: [] }
-    end
-
-    # POST /pg_insights/save_query
-    def save_query
-      name = params.require(:name)
-      sql = params.require(:sql)
-      file_path = Rails.root.join("db", "data", "insight_queries.json")
-
-      begin
-        data = File.exist?(file_path) ? JSON.parse(File.read(file_path)) : { "queries" => [] }
-        data["queries"] ||= []
-
-        data["queries"].unshift({
-          id: "saved_#{Time.current.to_i}",
-          name: name,
-          sql: sql,
-          category: "saved",
-          description: "User saved query",
-          timestamp: Time.current.iso8601
-        })
-
-        File.write(file_path, JSON.pretty_generate(data))
-        PgInsights::InsightQueryService.reload!
-
-        render json: { success: true }
-      rescue JSON::ParserError => e
-        Rails.logger.error "Failed to parse insight_queries.json: #{e.message}"
-        render json: { success: false, error: "Failed to parse query file." }, status: :internal_server_error
-      rescue IOError => e
-        Rails.logger.error "Failed to save query: #{e.message}"
-        render json: { success: false, error: "Failed to save query to file." }, status: :internal_server_error
-      end
     end
 
     private

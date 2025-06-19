@@ -21,7 +21,7 @@ module PgInsights
         bar_chart(
           chart_data[:chartData],
           height: "350px",
-          colors: ["#00979D", "#00838a", "#00767a"],
+          colors: [ "#00979D", "#00838a", "#00767a" ],
           responsive: true
         )
       rescue => e
@@ -51,7 +51,7 @@ module PgInsights
     end
 
     def query_category_badge_class(category)
-      "query-category-badge #{category.downcase}"
+      "query-category-badge #{category.to_s.downcase}"
     end
 
     def sql_placeholder_text
@@ -70,40 +70,40 @@ module PgInsights
 
     def query_example_button_data(query)
       {
-        query_id: query['id'],
-        category: query['category'],
-        title: query['description']
+        query_id: query["id"],
+        category: query["category"],
+        title: query["description"]
       }
     end
 
     def filter_buttons_data
       [
-        { category: 'all', label: 'All', active: true },
-        { category: 'database', label: 'Database', active: false },
-        { category: 'business', label: 'Business', active: false },
-        { category: 'sample', label: 'Sample', active: false }
+        { category: "all", label: "All", active: true },
+        { category: "database", label: "Database", active: false },
+        { category: "business", label: "Business", active: false },
+        { category: "sample", label: "Sample", active: false }
       ]
     end
 
     def cell_value_class(cell)
       if cell.nil?
-        'null-value'
+        "null-value"
       elsif cell.to_s.strip.empty?
-        'empty-value'
+        "empty-value"
       elsif cell.is_a?(Numeric) || (cell.is_a?(String) && cell.match?(/^\d+(\.\d+)?$/))
-        'numeric-value'
+        "numeric-value"
       elsif cell.to_s.length > 50
-        'long-text'
+        "long-text"
       else
-        'text-value'
+        "text-value"
       end
     end
 
     def format_cell_value(cell)
       if cell.nil?
-        'NULL'
+        "NULL"
       elsif cell.to_s.strip.empty?
-        'empty'
+        "empty"
       elsif cell.to_s.length > 100
         truncate(cell.to_s, length: 100)
       else
@@ -120,7 +120,7 @@ module PgInsights
       chart_data = result.rows.map do |row|
         label = row[0].to_s.truncate(30) # Truncate long labels
         value = parse_numeric_value(row[1])
-        value ? [label, value] : nil
+        value ? [ label, value ] : nil
       end.compact
 
       {
@@ -176,7 +176,7 @@ module PgInsights
 
       # Handle string numbers
       if value.is_a?(String)
-        cleaned = value.to_s.gsub(/[,$\s%]/, '')
+        cleaned = value.to_s.gsub(/[,$\s%]/, "")
         if cleaned.match?(/^\d+$/)
           return cleaned.to_i
         elsif cleaned.match?(/^\d+\.\d+$/)
