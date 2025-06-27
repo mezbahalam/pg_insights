@@ -3,7 +3,6 @@
 document.addEventListener('DOMContentLoaded', function() {
   if (!document.querySelector('.results-section')) return;
 
-  // Initialize results functionality
   initViewToggles();
   initChartRendering();
   initTableManager();

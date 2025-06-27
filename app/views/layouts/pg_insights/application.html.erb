@@ -24,10 +24,8 @@
         </div>
         <div class="header-right">
           <nav class="header-nav">
-            <%= link_to "Overview", "/pg_insights", class: "nav-link" %>
-            <%= link_to "Queries", "/pg_insights/queries", class: "nav-link" %>
-            <%= link_to "Space", "/pg_insights/space", class: "nav-link" %>
-            <%= link_to "Insights", main_app.insights_path, class: "nav-link active" %>
+            <%= link_to "Health Dashboard", pg_insights.health_path, class: "nav-link #{'active' if current_page?(pg_insights.health_path)}" %>
+            <%= link_to "Query Runner", pg_insights.root_path, class: "nav-link #{'active' if current_page?(pg_insights.root_path)}" %>
           </nav>
         </div>
       </div>
