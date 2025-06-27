@@ -8,5 +8,15 @@ PgInsights::Engine.routes.draw do
   get :table_names, to: "insights#table_names"
 
   # For managing user-saved queries
-  resources :queries, only: [ :create, :update, :destroy ]
+  resources :queries, only: [ :create, :update, :destroy ]  # For the health dashboard
+  get :health, to: "health#index"
+  namespace :health do
+    get :unused_indexes
+    get :missing_indexes
+    get :sequential_scans
+    get :slow_queries
+    get :table_bloat
+    get :parameter_settings
+    post :refresh
+  end
 end
