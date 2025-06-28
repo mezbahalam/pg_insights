@@ -22,8 +22,21 @@ module PgInsights
         end
       end
 
+      def remove_initializer
+        initializer_path = "config/initializers/pg_insights.rb"
+        initializer_full_path = File.join(destination_root, initializer_path)
+
+        if File.exist?(initializer_full_path)
+          puts "Removing PgInsights initializer..."
+          remove_file initializer_path
+          say_status("removed", initializer_path, :green)
+        else
+          say_status("skipped", "#{initializer_path} not found", :yellow)
+        end
+      end
+
       def show_migration_rollback_instructions
-        puts "\nPgInsights routes have been removed!"
+        puts "\nPgInsights has been cleaned up!"
         puts ""
         puts "To complete the uninstallation, you may also want to:"
         puts "1. Roll back the migrations:"
