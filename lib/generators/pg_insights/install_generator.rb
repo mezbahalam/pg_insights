@@ -106,7 +106,7 @@ module PgInsights
           #
           # ** Whenever (crontab) **
           # Add to config/schedule.rb:
-          #   every 15.minutes do
+          #   every 1.hour do
           #     runner "PgInsights::RecurringHealthChecksJob.perform_later"
           #   end
           #
@@ -114,7 +114,7 @@ module PgInsights
           # Add to config/initializers/sidekiq.rb:
           #   Sidekiq::Cron::Job.create(
           #     name: 'PgInsights Health Checks',
-          #     cron: '*/15 * * * *',
+          #     cron: '0 * * * *',
           #     class: 'PgInsights::RecurringHealthChecksJob'
           #   )
           #

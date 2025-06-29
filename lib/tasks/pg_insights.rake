@@ -79,16 +79,16 @@ namespace :pg_insights do
     end
   end
 
-  desc "Clean up all PgInsights data and migrations"
-  task clean: :environment do
-    puts "Cleaning up PgInsights data..."
+  desc "Clear all PgInsights stored data"
+  task clear_data: :environment do
+    puts "Clearing PgInsights stored data..."
 
     # Remove data from database
     begin
       if defined?(PgInsights::Query)
         query_count = PgInsights::Query.count
         PgInsights::Query.destroy_all
-        puts "Removed #{query_count} PgInsights queries"
+        puts "Removed #{query_count} stored queries"
       end
     rescue => e
       puts "Could not remove queries: #{e.message}"
@@ -98,14 +98,14 @@ namespace :pg_insights do
       if defined?(PgInsights::HealthCheckResult)
         result_count = PgInsights::HealthCheckResult.count
         PgInsights::HealthCheckResult.destroy_all
-        puts "Removed #{result_count} PgInsights health check results"
+        puts "Removed #{result_count} cached health check results"
       end
     rescue => e
       puts "Could not remove health check results: #{e.message}"
     end
 
-    puts "PgInsights data cleanup completed!"
-    puts "To remove migrations and routes, run: rails generate pg_insights:clean"
+    puts "PgInsights data cleared successfully!"
+    puts "To completely uninstall PgInsights (remove migrations and routes), run: rails generate pg_insights:clean"
   end
 
   desc "Reset PgInsights data (clears all stored queries and health check results)"
