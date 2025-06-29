@@ -1,0 +1,324 @@
+<div class="health-overview-section">
+  <div class="page-header">
+    <h1>Database Health Overview</h1>
+    <p>Monitor your PostgreSQL database performance and identify potential issues</p>
+  </div>
+
+  <div class="health-stats-grid">
+    <a href="#parameter-settings" class="stat-card-link">
+      <div class="stat-card">
+        <div class="stat-icon param-icon">⚙️</div>
+        <div class="stat-content">
+          <div class="stat-number"><%= (@parameter_settings.is_a?(Array) ? @parameter_settings.count : 0) %></div>
+          <div class="stat-label">Config Parameters</div>
+        </div>
+      </div>
+    </a>
+    
+    <a href="#unused-indexes" class="stat-card-link">
+      <div class="stat-card">
+        <div class="stat-icon unused-icon">🗑️</div>
+        <div class="stat-content">
+          <div class="stat-number"><%= (@unused_indexes.is_a?(Array) ? @unused_indexes.count : 0) %></div>
+          <div class="stat-label">Unused Indexes</div>
+        </div>
+      </div>
+    </a>
+    
+    <a href="#slow-queries" class="stat-card-link">
+      <div class="stat-card">
+        <div class="stat-icon slow-icon">🐌</div>
+        <div class="stat-content">
+          <div class="stat-number"><%= (@slow_queries.is_a?(Array) ? @slow_queries.count : 0) %></div>
+          <div class="stat-label">Slow Queries</div>
+        </div>
+      </div>
+    </a>
+    
+    <a href="#table-bloat" class="stat-card-link">
+      <div class="stat-card">
+        <div class="stat-icon bloat-icon">💾</div>
+        <div class="stat-content">
+          <div class="stat-number"><%= (@table_bloat.is_a?(Array) ? @table_bloat.count : 0) %></div>
+          <div class="stat-label">Bloated Tables</div>
+        </div>
+      </div>
+    </a>
+  </div>
+</div>
+
+<div class="health-details">
+  
+  <div class="health-section" id="parameter-settings">
+    <div class="section-header">
+      <h2>⚙️ Parameter Settings</h2>
+      <span class="section-description">PostgreSQL configuration parameters and recommendations</span>
+    </div>
+    
+    <div class="section-content">
+      <% if @parameter_settings.is_a?(Hash) && @parameter_settings[:error] %>
+        <div class="error-message">
+          <i class="fas fa-exclamation-triangle"></i>
+          <%= @parameter_settings[:error] %>
+        </div>
+      <% elsif @parameter_settings.nil? || @parameter_settings.empty? %>
+        <div class="info-message">
+          <i class="fas fa-info-circle"></i>
+          No parameter settings to review at this time.
+        </div>
+      <% else %>
+        <div class="items-list">
+          <% @parameter_settings.each do |param| %>
+            <div class="item-row">
+              <div class="item-main">
+                <div class="item-title"><%= param['name'] %></div>
+                <div class="item-subtitle"><%= param['short_desc'] %></div>
+              </div>
+              <div class="item-details">
+                <div class="detail-item">
+                  <span class="detail-label">Current Value:</span>
+                  <span class="detail-value">
+                    <code><%= param['setting'] %><%= param['unit'] %></code>
+                  </span>
+                </div>
+                <% if param['recommendation'] %>
+                  <div class="detail-item recommendation">
+                    <span class="detail-label">Recommendation:</span>
+                    <span class="detail-value"><%= param['recommendation'] %></span>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="health-section" id="unused-indexes">
+    <div class="section-header">
+      <h2>🗑️ Unused Indexes</h2>
+      <span class="section-description">Indexes that are rarely or never used and can be removed to save space</span>
+    </div>
+    
+    <div class="section-content">
+      <% if @unused_indexes.is_a?(Hash) && @unused_indexes[:error] %>
+        <div class="error-message">
+          <i class="fas fa-exclamation-triangle"></i>
+          <%= @unused_indexes[:error] %>
+        </div>
+      <% elsif @unused_indexes.nil? || @unused_indexes.empty? %>
+        <div class="success-message">
+          <i class="fas fa-check-circle"></i>
+          No unused indexes found - excellent database maintenance!
+        </div>
+      <% else %>
+        <div class="items-list">
+          <% @unused_indexes.each do |index| %>
+            <div class="item-row">
+              <div class="item-main">
+                <div class="item-title"><%= index['index'] %></div>
+                <div class="item-subtitle">Table: <%= index['table'] %></div>
+              </div>
+              <div class="item-details">
+                <div class="detail-item">
+                  <span class="detail-label">Size:</span>
+                  <span class="detail-value"><%= index['index_size'] %></span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Scans:</span>
+                  <span class="detail-value"><%= index['index_scans'] %></span>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="health-section" id="missing-indexes">
+    <div class="section-header">
+      <h2>⚠️ Potentially Missing Indexes</h2>
+      <span class="section-description">Tables with high sequential scan ratios that might benefit from indexes</span>
+    </div>
+    
+    <div class="section-content">
+      <% if @missing_indexes.is_a?(Hash) && @missing_indexes[:error] %>
+        <div class="error-message">
+          <i class="fas fa-exclamation-triangle"></i>
+          <%= @missing_indexes[:error] %>
+        </div>
+      <% elsif @missing_indexes.nil? || @missing_indexes.empty? %>
+        <div class="success-message">
+          <i class="fas fa-check-circle"></i>
+          No tables with excessive sequential scans found - good indexing strategy!
+        </div>
+      <% else %>
+        <div class="items-list">
+          <% @missing_indexes.each do |table| %>
+            <div class="item-row">
+              <div class="item-main">
+                <div class="item-title"><%= table['table'] %></div>
+                <div class="item-subtitle">Size: <%= table['table_size'] %></div>
+              </div>
+              <div class="item-details">
+                <div class="detail-item">
+                  <span class="detail-label">Sequential Scans:</span>
+                  <span class="detail-value warning"><%= table['seq_scan'] %></span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Index Scans:</span>
+                  <span class="detail-value"><%= table['idx_scan'] %></span>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="health-section" id="slow-queries">
+    <div class="section-header">
+      <h2>🐌 Slow Queries</h2>
+      <span class="section-description">Queries with the highest execution times that need optimization</span>
+    </div>
+    
+    <div class="section-content">
+      <% if @slow_queries.is_a?(Hash) && @slow_queries[:error] %>
+        <div class="error-message">
+          <i class="fas fa-exclamation-triangle"></i>
+          <strong>Note:</strong> This feature requires the <code>pg_stat_statements</code> extension.
+          <br><%= @slow_queries[:error] %>
+        </div>
+      <% elsif @slow_queries.nil? || @slow_queries.empty? %>
+        <div class="success-message">
+          <i class="fas fa-check-circle"></i>
+          No slow queries detected - excellent query performance!
+        </div>
+      <% else %>
+        <div class="items-list">
+          <% @slow_queries.each do |query| %>
+            <div class="item-row query-item">
+              <div class="item-main">
+                <div class="item-title">
+                  <code class="query-text"><%= truncate(query['query'], length: 80) %></code>
+                </div>
+              </div>
+              <div class="item-details">
+                <div class="detail-item">
+                  <span class="detail-label">Avg Time:</span>
+                  <span class="detail-value warning"><%= number_with_precision(query['mean_exec_time'], precision: 2) %>ms</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Total Time:</span>
+                  <span class="detail-value"><%= number_with_precision(query['total_exec_time'], precision: 2) %>ms</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Calls:</span>
+                  <span class="detail-value"><%= number_with_delimiter(query['calls']) %></span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Rows:</span>
+                  <span class="detail-value"><%= number_with_delimiter(query['rows']) %></span>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="health-section" id="sequential-scans">
+    <div class="section-header">
+      <h2>🔍 High Sequential Scans</h2>
+      <span class="section-description">Tables with high sequential scan activity</span>
+    </div>
+    
+    <div class="section-content">
+      <% if @sequential_scans.is_a?(Hash) && @sequential_scans[:error] %>
+        <div class="error-message">
+          <i class="fas fa-exclamation-triangle"></i>
+          <%= @sequential_scans[:error] %>
+        </div>
+      <% elsif @sequential_scans.nil? || @sequential_scans.empty? %>
+        <div class="success-message">
+          <i class="fas fa-check-circle"></i>
+          No tables with excessive sequential scans found.
+        </div>
+      <% else %>
+        <div class="items-list">
+          <% @sequential_scans.each do |scan| %>
+            <div class="item-row">
+              <div class="item-main">
+                <div class="item-title"><%= scan['table'] %></div>
+                <div class="item-subtitle">Size: <%= scan['table_size'] %></div>
+              </div>
+              <div class="item-details">
+                <div class="detail-item">
+                  <span class="detail-label">Sequential Scans:</span>
+                  <span class="detail-value warning"><%= scan['seq_scan'] %></span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Rows Read:</span>
+                  <span class="detail-value"><%= number_with_delimiter(scan['seq_tup_read']) %></span>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="health-section" id="table-bloat">
+    <div class="section-header">
+      <h2>💾 Table Bloat</h2>
+      <span class="section-description">Tables with significant bloat that may need maintenance</span>
+    </div>
+    
+    <div class="section-content">
+      <% if @table_bloat.is_a?(Hash) && @table_bloat[:error] %>
+        <div class="error-message">
+          <i class="fas fa-exclamation-triangle"></i>
+          <%= @table_bloat[:error] %>
+        </div>
+      <% elsif @table_bloat.nil? || @table_bloat.empty? %>
+        <div class="success-message">
+          <i class="fas fa-check-circle"></i>
+          No significant table bloat detected.
+        </div>
+      <% else %>
+        <div class="items-list">
+          <% @table_bloat.each do |bloat| %>
+            <div class="item-row">
+              <div class="item-main">
+                <div class="item-title"><%= bloat['table_name'] %></div>
+                <div class="item-subtitle">Size: <%= bloat['table_mb'] %> MB</div>
+              </div>
+              <div class="item-details">
+                <div class="detail-item">
+                  <span class="detail-label">Bloat Percentage:</span>
+                  <span class="detail-value <%= bloat['bloat_pct'].to_f > 50 ? 'danger' : 'warning' %>">
+                    <%= bloat['bloat_pct'] %>%
+                  </span>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+</div>
+
+<div class="health-footer">
+  <div class="footer-text">
+    <i class="fas fa-clock"></i>
+    Last updated: <%= Time.current.strftime("%B %d, %Y at %H:%M:%S %Z") %>
+  </div>
+</div>
+
