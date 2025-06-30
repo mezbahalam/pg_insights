@@ -33,6 +33,18 @@ I got tired of switching between different tools to check database performance. 
 - Caches results so repeated visits are fast
 - Configurable timeouts to prevent slow queries from hanging
 
+## Screenshots
+
+### Health Dashboard
+Monitor your PostgreSQL database performance and identify potential issues at a glance.
+
+![Health Dashboard](health_dashboard.png)
+
+### Query Runner
+Run custom queries and visualize results with built-in charting capabilities.
+
+![Query Runner](query_runner.png)
+
 ## Installation
 
 Add to your Gemfile:
