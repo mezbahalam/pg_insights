@@ -258,7 +258,7 @@ module PgInsights
       result = execute_query(sql)
       return result if result.is_a?(Hash) && result[:error]
 
-      #todo basic recommendations (can be improved with system info)
+      # todo basic recommendations (can be improved with system info)
       recommendations = {
         "shared_buffers" => "Recommended: 25% of total system RAM.",
         "work_mem" => "Recommended: Based on RAM, connections, and query complexity. Default is often too low.",
