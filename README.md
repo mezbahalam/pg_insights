@@ -1,86 +1,183 @@
-# PgInsights ✨
+# PgInsights
+
+**PostgreSQL performance monitoring for Rails apps**
 
 [![Gem Version](https://badge.fury.io/rb/pg_insights.svg)](https://badge.fury.io/rb/pg_insights)
 [![CI](https://github.com/mezbahalam/pg_insights/actions/workflows/ci.yml/badge.svg)](https://github.com/mezbahalam/pg_insights/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**PgInsights** is a Rails engine that provides a beautiful and plug-and-play dashboard for analyzing PostgreSQL performance and health directly within your Rails application. Get instant insights into your database's behavior, optimize slow queries, and monitor key metrics with ease.
+PgInsights is a Rails engine that gives you a web dashboard for monitoring your PostgreSQL database performance. Think of it as a lightweight alternative to external monitoring tools that lives right inside your Rails app.
 
-It's designed for developers who want a quick way to get critical database-level insights without leaving their application or setting up external monitoring tools.
+## Why I built this
 
-## Features
+I got tired of switching between different tools to check database performance. Sometimes you just want to quickly see which indexes aren't being used, or find slow queries without setting up a whole monitoring infrastructure. PgInsights gives you that - a simple dashboard you can access at `/pg_insights` in your Rails app.
 
-- **📊 Beautiful Dashboard:** A clean and modern UI to visualize your database insights.
-- **📈 Chart-Powered Visualizations:** Uses [Chartkick](https://chartkick.com/) to render beautiful, interactive charts.
-- **🚀 Pre-defined Queries:** Comes with a set of built-in queries for common checks like active connections, long-running queries, cache hit rates, and more.
-- **✍️ Custom SQL Runner:** Write and run your own `SELECT` queries against your database.
-- **💾 Save & Manage Queries:** Save your frequently used queries for quick access.
-- **🔒 Safe & Secure:** Enforces read-only queries and uses statement timeouts to prevent long-running queries from impacting your application.
-- **🔌 Plug-and-Play:** Easy to install and requires minimal configuration.
+## What you get
 
-## Screenshots
+**Health Dashboard**
+- Find unused indexes that are wasting space
+- Spot tables that might need indexes (high sequential scans)
+- Identify slow queries (if you have pg_stat_statements enabled)
+- Check for table bloat that needs cleanup
+- Review PostgreSQL configuration settings
 
-*(Add a screenshot of the dashboard here)*
+**Query Runner**
+- Run your own SELECT queries safely
+- Built-in queries for common performance checks
+- Save queries you use frequently
+- Results displayed as tables or charts
+
+**Smart execution**
+- Runs health checks in background jobs if you have them set up
+- Falls back to running directly if you don't
+- Caches results so repeated visits are fast
+- Configurable timeouts to prevent slow queries from hanging
 
 ## Installation
 
-1. Add this line to your application's Gemfile:
+Add to your Gemfile:
 
 ```ruby
-gem "pg_insights", "~> 0.1.0"
+gem 'pg_insights'
 ```
 
-2. And then execute:
+Run the installer:
+
 ```bash
-$ bundle install
+bundle install
+rails generate pg_insights:install
+rails db:migrate
 ```
 
-3. Run the installer to copy migrations and mount the engine:
+That's it. Visit `/pg_insights` in your browser.
+
+## Configuration
+
+The engine works out of the box, but you can customize it:
+
+```ruby
+# config/initializers/pg_insights.rb
+PgInsights.configure do |config|
+  # Run health checks in background (default: true)
+  config.enable_background_jobs = true
+  
+  # How long to cache results (default: 5 minutes)
+  config.health_cache_expiry = 10.minutes
+  
+  # Timeout for health check queries (default: 10 seconds)
+  config.health_check_timeout = 15.seconds
+  
+  # Queue name for background jobs (default: :pg_insights_health)
+  config.background_job_queue = :low_priority
+end
+```
+
+## How Background Jobs Work
+
+**PgInsights uses on-demand background jobs, not automatic scheduling.**
+
+### When health checks run:
+- ✅ **When you visit the health dashboard `/pg_insights/health`** and cached data is older than `health_cache_expiry` (default: 5 minutes)
+- ✅ **When you click the "Refresh" button** in the dashboard
+- ✅ **When you run** `rails pg_insights:health_check` manually
+- ❌ **NOT automatically** - PgInsights doesn't run background jobs on its own
+
+### How caching works:
+```
+Visit at 2:00 PM → Runs health checks, caches results for 5 minutes
+Visit at 2:03 PM → Uses cached results (still fresh)
+Visit at 2:06 PM → Data is stale, triggers new background jobs
+```
+
+### Background job setup (optional but recommended):
+
+If your app has background jobs (Sidekiq, Resque, etc.), PgInsights will use them for better performance:
+
 ```bash
-$ rails g pg_insights:install
+# Check if background jobs are working
+rails pg_insights:status
 ```
 
-This will add the engine's route to your `config/routes.rb` and copy the necessary migration file.
+**Without background jobs**: Health checks run synchronously when you visit the page (slower but works)  
+**With background jobs**: Health checks run asynchronously (faster, non-blocking)
 
-4. Run the database migration:
-```bash
-$ rails db:migrate
+### Optional: Automatic recurring checks
+
+If you want health checks to run automatically (not just on-demand), set up a scheduler:
+
+```ruby
+# Using whenever (runs every hour)
+every 1.hour do
+  runner "PgInsights::RecurringHealthChecksJob.perform_later"
+end
+
+# Using sidekiq-cron
+Sidekiq::Cron::Job.create(
+  name: 'PgInsights Health Checks',
+  cron: '0 * * * *',
+  class: 'PgInsights::RecurringHealthChecksJob'
+)
 ```
 
-This will create the `pg_insights_queries` table needed to store your saved queries.
+**Note**: Even with automatic scheduling, the jobs are smart - they only run expensive queries if the cached data is actually stale.
 
 ## Usage
 
-Navigate to `/pg_insights` in your browser to access the dashboard.
+Navigate to `/pg_insights` in your app. The interface is pretty straightforward:
 
-From there, you can:
-- Select a pre-defined query from the sidebar to see its results.
-- Write your own SQL in the editor and click "Run Query".
-- Save a query you've written by giving it a name and clicking "Save".
+- **Main page**: Run queries and see results as tables or charts
+- **Health tab**: Database performance overview
+- **Query examples**: Pre-built queries for common checks
 
-## Development
+All queries are read-only (SELECT statements only) and have timeouts to prevent issues.
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+## Available rake tasks
 
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and the created tag, and push the `.gem` file to [RubyGems.org](https://rubygems.org).
+```bash
+rails pg_insights:status        # Check configuration
+rails pg_insights:health_check  # Run health checks manually
+rails pg_insights:stats         # Show usage statistics
+rails pg_insights:clear_data    # Clear stored data and caches
+```
+
+## Safety
+
+- Only SELECT queries allowed
+- Query timeouts prevent long-running queries
+- Focuses on public schema by default
+- No modification of your data
+
+## Uninstalling
+
+```bash
+rails generate pg_insights:clean
+rails db:rollback STEP=2
+# Remove gem from Gemfile
+```
+
+## Requirements
+
+- Rails 6.1+
+- PostgreSQL
+- For slow query detection: pg_stat_statements extension (optional)
 
 ## Contributing
 
-Contributions are welcome! Please feel free to open an issue or submit a pull request.
+Found a bug or have an idea? Open an issue or send a pull request. The codebase is pretty straightforward.
 
-1. Fork the repository.
-2. Create your feature branch (`git checkout -b my-new-feature`).
-3. Commit your changes (`git commit -am 'Add some feature'`).
-4. Push to the branch (`git push origin my-new-feature`).
-5. Create a new Pull Request.
+Development setup:
 
-Please make sure to update tests as appropriate.
+```bash
+git clone https://github.com/mezbahalam/pg_insights.git
+cd pg_insights
+bundle install
+bundle exec rake spec
+```
 
 ## License
 
-The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
+MIT License. See [LICENSE](MIT-LICENSE) file.
 
-## Acknowledgements
+---
 
-- Built with ❤️ for the Rails community.
-- Inspired by tools like pg_hero.
+Built by [Mezbah Alam](https://github.com/mezbahalam). Inspired by pg_hero and other database monitoring tools.
