@@ -189,7 +189,6 @@ rails pg_insights:clear_data    # Clear stored data and caches
 
 ```bash
 rails generate pg_insights:clean
-rails db:rollback STEP=2
 # Remove gem from Gemfile
 ```
 
