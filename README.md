@@ -80,6 +80,31 @@ Run custom queries and visualize results with built-in charting capabilities.
 
 ![Query Runner](query_runner.png)
 
+### Timeline Dashboard
+Track database configuration changes and performance trends over time.
+
+![Timeline Dashboard](timeline_dashboard.png)
+
+### Snapshot Details
+View detailed information about individual database snapshots including parameters and metadata.
+
+![Snapshot Details](snapshot_details.png)
+
+### Performance Metrics
+Monitor key performance indicators and database health metrics across time periods.
+
+![Performance Metrics](snapshot_performance.png)
+
+### Snapshot Comparison
+Compare database configurations and performance metrics between different time periods.
+
+![Snapshot Comparison](snapshot_comparison.png)
+
+### Side-by-Side Comparison
+Detailed comparison view showing parameter changes and performance differences.
+
+![Compare Snapshots](compare_snapshots.png)
+
 </details>
 
 ## ⏩ Quick Start
