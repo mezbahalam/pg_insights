@@ -335,7 +335,7 @@ namespace :pg_insights do
   task seed_timeline: :environment do
     puts "Generating fake timeline data for testing..."
 
-    end_date = Date.new(2025, 7, 2)
+    end_date = Date.current
     start_date = end_date - 90.days
 
     puts "📅 Generating data from #{start_date.strftime('%B %d, %Y')} to #{end_date.strftime('%B %d, %Y')}"
