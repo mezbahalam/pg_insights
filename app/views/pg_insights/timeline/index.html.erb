@@ -1,0 +1,797 @@
+<div class="timeline-compact">
+  <!-- Compact Header -->
+  <div class="compact-header">
+    <div class="header-content">
+      <div class="header-main">
+        <h1>📊 Database Timeline</h1>
+        <p>PostgreSQL performance monitoring & configuration tracking</p>
+      </div>
+      <button onclick="refreshSnapshot()" class="btn-primary compact">🔄 Collect</button>
+    </div>
+  </div>
+
+  <!-- Compact Stats -->
+  <% if @stats.any? %>
+    <div class="stats-row">
+      <div class="stat-compact">
+        <div class="stat-icon">📊</div>
+        <div class="stat-data">
+          <span class="value"><%= @stats[:total_snapshots] %></span>
+          <span class="label">Snapshots</span>
+        </div>
+      </div>
+      
+      <div class="stat-compact <%= (@stats[:parameter_changes_count] || 0) > 0 ? 'warning' : 'success' %>">
+        <div class="stat-icon">⚙️</div>
+        <div class="stat-data">
+          <span class="value"><%= @stats[:parameter_changes_count] || 0 %></span>
+          <span class="label">Config Changes</span>
+        </div>
+      </div>
+      
+      <div class="stat-compact <%= (@stats[:latest_cache_hit_rate] || 0) > 95 ? 'success' : 'warning' %>">
+        <div class="stat-icon">💾</div>
+        <div class="stat-data">
+          <span class="value"><%= (@stats[:latest_cache_hit_rate] || 0).round(1) %>%</span>
+          <span class="label">Cache Hit</span>
+        </div>
+      </div>
+      
+      <div class="stat-compact">
+        <div class="stat-icon">📅</div>
+        <div class="stat-data">
+          <span class="value">
+            <% if @stats.dig(:date_range, :from) && @stats.dig(:date_range, :to) %>
+              <%= distance_of_time_in_words(@stats.dig(:date_range, :from), @stats.dig(:date_range, :to)) %>
+            <% else %>
+              --
+            <% end %>
+          </span>
+          <span class="label">Period</span>
+        </div>
+      </div>
+
+      <div class="actions-compact">
+        <a href="<%= timeline_export_path(format: 'csv') %>" class="btn-ghost">📥 CSV</a>
+        <a href="<%= timeline_export_path(format: 'json') %>" class="btn-ghost">📋 JSON</a>
+        <a href="#compare" class="btn-ghost" onclick="scrollToCompare()">🔍 Compare</a>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- Main Layout -->
+  <div class="main-layout">
+    
+    <!-- Chart Panel -->
+    <div class="chart-panel">
+      <div class="panel-header">
+        <h3>📈 Performance Timeline</h3>
+        <div class="chart-controls">
+          <div class="legend">
+            <span class="legend-item"><span class="dot green"></span>Cache Hit %</span>
+            <span class="legend-item"><span class="dot yellow"></span>Query Time (ms)</span>
+          </div>
+          <div class="chart-actions">
+            <button class="btn-mini">📊 Export</button>
+          </div>
+        </div>
+      </div>
+      
+      <% if @timeline_data && @timeline_data[:dates]&.any? %>
+        <div class="chart-area">
+          <%= line_chart [
+            { name: "Cache Hit Rate (%)", data: (@timeline_data[:dates] || []).zip(@timeline_data[:cache_hit_rates] || []) },
+            { name: "Avg Query Time (ms)", data: (@timeline_data[:dates] || []).zip(@timeline_data[:avg_query_times] || []) }
+          ], height: "280px", colors: ["#10b981", "#f59e0b"], curve: false, points: false %>
+        </div>
+        
+        <!-- Compact Parameter Changes -->
+        <% if @timeline_data && @timeline_data[:parameter_changes]&.any? %>
+          <div class="changes-timeline">
+            <div class="changes-header">
+              <span class="changes-title">⚙️ Config Changes (<%= (@timeline_data[:parameter_changes] || []).count %>)</span>
+            </div>
+            <div class="changes-list">
+              <% @timeline_data[:parameter_changes].first(3).each_with_index do |change_event, index| %>
+                <div class="change-item <%= index == 0 ? 'recent' : '' %>">
+                  <div class="change-date"><%= change_event[:detected_at].strftime('%m/%d %H:%M') %></div>
+                  <div class="change-details">
+                    <% (change_event[:changes] || {}).first(2).each do |param, details| %>
+                      <span class="change-tag">
+                        <code><%= param.split('_').first %></code>: <%= details[:from] %> → <%= details[:to] %>
+                      </span>
+                    <% end %>
+                    <% if (change_event[:changes] || {}).count > 2 %>
+                      <span class="change-more">+<%= (change_event[:changes] || {}).count - 2 %> more</span>
+                    <% end %>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      <% else %>
+        <div class="empty-chart">
+          <div class="empty-icon">📈</div>
+          <h4>No Timeline Data</h4>
+          <p>Collect snapshots to see performance trends</p>
+          <button onclick="refreshSnapshot()" class="btn-primary">🚀 Start</button>
+        </div>
+      <% end %>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="sidebar-panel">
+      
+      <!-- System Status -->
+      <div class="status-panel">
+        <h4>System Status</h4>
+        <div class="status-grid">
+          <div class="status-item">
+            <span class="status-dot green"></span>
+            <span class="status-text">Collection Active</span>
+          </div>
+          <div class="status-item">
+            <span class="status-dot green"></span>
+            <span class="status-text">DB Connected</span>
+          </div>
+          <div class="status-item">
+            <span class="status-dot blue"></span>
+            <span class="status-text">90 days retention</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Snapshots -->
+      <div class="snapshots-panel">
+        <h4>📸 Recent Snapshots</h4>
+        <% if @snapshots.any? %>
+          <div class="snapshots-list">
+            <% @snapshots.first(5).each do |snapshot| %>
+              <div class="snapshot-row">
+                <div class="snapshot-time">
+                  <%= snapshot.executed_at.strftime('%m/%d %H:%M') %>
+                  <span class="status-mini <%= snapshot.status %>"></span>
+                </div>
+                <div class="snapshot-metrics">
+                  <span class="metric">💾 <%= (snapshot.result_data.dig('metrics', 'cache_hit_rate') || 0).to_f.round(1) %>%</span>
+                  <span class="metric">🔗 <%= (snapshot.result_data.dig('metrics', 'total_connections') || 0).to_i %></span>
+                </div>
+                <a href="<%= timeline_show_path(id: snapshot.id) %>" class="btn-mini">View</a>
+              </div>
+            <% end %>
+          </div>
+          <% if @snapshots.count > 5 %>
+            <div class="load-more">
+              <button class="btn-ghost small" onclick="loadMore()">+<%= @snapshots.count - 5 %> more</button>
+            </div>
+          <% end %>
+        <% else %>
+          <div class="empty-snapshots">
+            <p>No snapshots yet</p>
+            <button onclick="refreshSnapshot()" class="btn-primary small">Create First</button>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Compact Comparison Tool -->
+  <div class="compare-panel" id="compare">
+    <div class="panel-header">
+      <h3>🔍 Compare Snapshots</h3>
+    </div>
+    <div class="compare-form">
+      <form action="<%= timeline_compare_path %>" method="get" class="form-row">
+        <div class="form-group">
+          <label>From</label>
+          <input type="date" id="date1" name="date1" required>
+        </div>
+        <div class="form-group">
+          <label>To</label>
+          <input type="date" id="date2" name="date2" required>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-ghost" onclick="setRange(7)">7d</button>
+          <button type="button" class="btn-ghost" onclick="setRange(30)">30d</button>
+          <button type="submit" class="btn-primary">Compare</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Compact Design System -->
+<style>
+:root {
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 20px;
+  
+  --text-xs: 11px;
+  --text-sm: 13px;
+  --text-base: 14px;
+  --text-lg: 16px;
+  --text-xl: 18px;
+  
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #3b82f6;
+  --neutral: #6b7280;
+  
+  --border: #e5e7eb;
+  --bg: #f9fafb;
+  --card: #ffffff;
+  --text: #111827;
+  --text-muted: #6b7280;
+}
+
+.timeline-compact {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: var(--space-lg);
+  background: var(--bg);
+  font-size: var(--text-base);
+  line-height: 1.4;
+}
+
+/* Compact Header */
+.compact-header {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: var(--space-lg);
+  margin-bottom: var(--space-lg);
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.compact-header h1 {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  margin: 0 0 2px 0;
+  color: var(--text);
+}
+
+.compact-header p {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* Compact Stats Row */
+.stats-row {
+  display: flex;
+  gap: var(--space-lg);
+  margin-bottom: var(--space-lg);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.stat-compact {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: var(--space-md) var(--space-lg);
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  min-width: 120px;
+  position: relative;
+}
+
+.stat-compact.success::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--success); border-radius: 8px 8px 0 0; }
+.stat-compact.warning::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--warning); border-radius: 8px 8px 0 0; }
+
+.stat-icon {
+  font-size: var(--text-lg);
+}
+
+.stat-data {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.stat-data .value {
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1;
+}
+
+.stat-data .label {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  line-height: 1;
+}
+
+.actions-compact {
+  display: flex;
+  gap: var(--space-sm);
+  margin-left: auto;
+}
+
+/* Main Layout */
+.main-layout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: var(--space-lg);
+  margin-bottom: var(--space-lg);
+}
+
+/* Panel Base */
+.chart-panel, .sidebar-panel, .compare-panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.panel-header {
+  padding: var(--space-lg) var(--space-lg) var(--space-md) var(--space-lg);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.panel-header h3, .panel-header h4 {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  margin: 0;
+  color: var(--text);
+}
+
+/* Chart Panel */
+.chart-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+}
+
+.legend {
+  display: flex;
+  gap: var(--space-lg);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.dot.green { background: var(--success); }
+.dot.yellow { background: var(--warning); }
+
+.chart-area {
+  padding: var(--space-md) var(--space-lg);
+}
+
+/* Compact Changes Timeline */
+.changes-timeline {
+  border-top: 1px solid var(--border);
+  padding: var(--space-lg);
+}
+
+.changes-header {
+  margin-bottom: var(--space-md);
+}
+
+.changes-title {
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.changes-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.change-item {
+  display: flex;
+  gap: var(--space-md);
+  padding: var(--space-sm);
+  background: var(--bg);
+  border-radius: 6px;
+  border-left: 3px solid var(--border);
+}
+
+.change-item.recent {
+  border-left-color: var(--info);
+  background: #eff6ff;
+}
+
+.change-date {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  font-weight: 600;
+  min-width: 60px;
+}
+
+.change-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  align-items: center;
+}
+
+.change-tag {
+  background: var(--card);
+  border: 1px solid var(--border);
+  padding: 2px var(--space-xs);
+  border-radius: 4px;
+  font-size: var(--text-xs);
+}
+
+.change-tag code {
+  color: var(--info);
+  font-weight: 600;
+}
+
+.change-more {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Sidebar Panels */
+.sidebar-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.status-panel, .snapshots-panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: var(--space-lg);
+}
+
+.status-panel h4, .snapshots-panel h4 {
+  font-size: var(--text-base);
+  font-weight: 600;
+  margin: 0 0 var(--space-md) 0;
+  color: var(--text);
+}
+
+.status-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.status-dot.green { background: var(--success); }
+.status-dot.blue { background: var(--info); }
+
+.status-text {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+/* Snapshots List */
+.snapshots-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.snapshot-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm);
+  background: var(--bg);
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+
+.snapshot-time {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  font-weight: 600;
+  min-width: 80px;
+}
+
+.status-mini {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--success);
+}
+
+.snapshot-metrics {
+  display: flex;
+  gap: var(--space-sm);
+  flex: 1;
+}
+
+.metric {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+/* Compare Panel */
+.compare-panel {
+  margin-bottom: var(--space-lg);
+}
+
+.compare-form {
+  padding: var(--space-lg);
+}
+
+.form-row {
+  display: flex;
+  gap: var(--space-lg);
+  align-items: end;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.form-group label {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.form-group input {
+  padding: var(--space-sm);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: var(--text-sm);
+}
+
+.form-actions {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+}
+
+/* Buttons */
+.btn-primary, .btn-ghost, .btn-mini {
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.btn-primary {
+  background: var(--info);
+  color: white;
+  padding: var(--space-sm) var(--space-lg);
+  font-size: var(--text-sm);
+}
+
+.btn-primary:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.btn-primary.compact {
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--text-sm);
+}
+
+.btn-primary.small {
+  padding: var(--space-xs) var(--space-sm);
+  font-size: var(--text-xs);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  padding: var(--space-xs) var(--space-sm);
+  font-size: var(--text-sm);
+}
+
+.btn-ghost:hover {
+  background: var(--bg);
+  color: var(--text);
+}
+
+.btn-ghost.small {
+  padding: 2px var(--space-xs);
+  font-size: var(--text-xs);
+}
+
+.btn-mini {
+  background: var(--bg);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  padding: 2px var(--space-xs);
+  font-size: var(--text-xs);
+}
+
+.btn-mini:hover {
+  background: var(--info);
+  color: white;
+}
+
+/* Empty States */
+.empty-chart, .empty-snapshots {
+  text-align: center;
+  padding: var(--space-xl);
+  color: var(--text-muted);
+}
+
+.empty-icon {
+  font-size: 32px;
+  margin-bottom: var(--space-sm);
+}
+
+.empty-chart h4, .empty-snapshots h4 {
+  font-size: var(--text-base);
+  font-weight: 600;
+  margin: 0 0 var(--space-xs) 0;
+  color: var(--text);
+}
+
+.empty-chart p, .empty-snapshots p {
+  font-size: var(--text-sm);
+  margin: 0 0 var(--space-md) 0;
+}
+
+.load-more {
+  text-align: center;
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--border);
+  margin-top: var(--space-md);
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .main-layout {
+    grid-template-columns: 1fr;
+  }
+  
+  .sidebar-panel {
+    flex-direction: row;
+  }
+  
+  .status-panel, .snapshots-panel {
+    flex: 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .timeline-compact {
+    padding: var(--space-md);
+  }
+  
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-sm);
+  }
+  
+  .actions-compact {
+    grid-column: 1 / -1;
+    justify-content: center;
+    margin: var(--space-md) 0 0 0;
+  }
+  
+  .form-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .sidebar-panel {
+    flex-direction: column;
+  }
+}
+</style>
+
+<script>
+function refreshSnapshot() {
+  const button = event.target;
+  const originalText = button.innerHTML;
+  button.innerHTML = '⏳ Collecting...';
+  button.disabled = true;
+
+  fetch('<%= timeline_refresh_path %>', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    button.innerHTML = originalText;
+    button.disabled = false;
+    
+    if (data.message) {
+      showToast('✅ ' + data.message, 'success');
+      setTimeout(() => location.reload(), 2000);
+    } else if (data.error) {
+      showToast('❌ ' + data.error, 'error');
+    }
+  })
+  .catch(error => {
+    button.innerHTML = originalText;
+    button.disabled = false;
+    showToast('❌ Error: ' + error.message, 'error');
+  });
+}
+
+function setRange(days) {
+  const today = new Date();
+  const pastDate = new Date(today.getTime() - days * 24 * 60 * 60 * 1000);
+  
+  document.getElementById('date1').value = pastDate.toISOString().split('T')[0];
+  document.getElementById('date2').value = today.toISOString().split('T')[0];
+}
+
+function scrollToCompare() {
+  document.getElementById('compare').scrollIntoView({ 
+    behavior: 'smooth',
+    block: 'start'
+  });
+}
+
+function loadMore() {
+  console.log('Load more snapshots');
+}
+
+function showToast(message, type) {
+  const toast = document.createElement('div');
+  toast.innerHTML = message;
+  toast.style.cssText = `
+    position: fixed; top: 20px; right: 20px; padding: 8px 12px; border-radius: 6px;
+    font-size: 13px; font-weight: 600; z-index: 1000; max-width: 300px;
+    background: ${type === 'success' ? '#10b981' : '#ef4444'}; color: white;
+    animation: slideIn 0.3s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  `;
+  
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 4000);
+}
+
+// Set default dates
+document.addEventListener('DOMContentLoaded', function() {
+  setRange(7);
+});
+</script>
