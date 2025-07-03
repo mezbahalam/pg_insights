@@ -25,6 +25,7 @@
         <div class="header-right">
           <nav class="header-nav">
             <%= link_to "Health Dashboard", pg_insights.health_path, class: "nav-link #{'active' if current_page?(pg_insights.health_path)}" %>
+            <%= link_to "Timeline", pg_insights.timeline_path, class: "nav-link #{'active' if current_page?(pg_insights.timeline_path)}" %>
             <%= link_to "Query Runner", pg_insights.root_path, class: "nav-link #{'active' if current_page?(pg_insights.root_path)}" %>
           </nav>
         </div>

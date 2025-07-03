@@ -44,6 +44,19 @@ PgInsights gives you that - a simple dashboard you can access at `/pg_insights` 
 
 </td>
 </tr>
+<tr>
+<td colspan="2">
+
+### 📈 Timeline & Monitoring
+- **Database snapshots**: Automatic collection of performance metrics and configuration parameters
+- **Parameter change tracking**: Detect when PostgreSQL settings are modified over time
+- **Performance trends**: Monitor cache hit rates, query times, and connection counts
+- **Historical comparisons**: Compare database state between any two time periods
+- **Export capabilities**: Download timeline data as CSV or JSON for further analysis
+- **Configurable retention**: Automatic cleanup of old snapshots based on retention policy
+
+</td>
+</tr>
 </table>
 
 ### ⚡️ Smart execution
@@ -94,17 +107,19 @@ The engine works out of the box, but you can customize it:
 ```ruby
 # config/initializers/pg_insights.rb
 PgInsights.configure do |config|
-  # Run health checks in background (default: true)
+  # === Background Jobs ===
   config.enable_background_jobs = true
+  config.background_job_queue = :pg_insights_health
   
-  # How long to cache results (default: 5 minutes)
-  config.health_cache_expiry = 10.minutes
+  # === Health Check Settings ===
+  config.health_cache_expiry = 5.minutes
+  config.health_check_timeout = 10.seconds
   
-  # Timeout for health check queries (default: 10 seconds)
-  config.health_check_timeout = 15.seconds
-  
-  # Queue name for background jobs (default: :pg_insights_health)
-  config.background_job_queue = :low_priority
+  # === Timeline & Snapshot Settings ===
+  config.enable_snapshots = true                    # Enable timeline feature
+  config.snapshot_frequency = 1.day                 # How often to collect snapshots
+  config.snapshot_retention_days = 90               # How long to keep snapshots
+  config.snapshot_collection_enabled = true         # Master switch for snapshot collection
 end
 ```
 
@@ -163,19 +178,37 @@ Navigate to `/pg_insights` in your app. The interface is pretty straightforward:
 
 | Page | What it does |
 |------|-------------|
-| **Main page** | Run queries and see results as tables or charts |
-| **Health tab** | Database performance overview |
-| **Query examples** | Pre-built queries for common checks |
+| **Query Runner** | Run custom queries and see results as tables or charts |
+| **Health Dashboard** | Real-time database performance overview and issue detection |
+| **Timeline** | Historical tracking of database performance metrics and configuration changes |
 
 All queries are read-only (SELECT statements only) and have timeouts to prevent issues.
 
 ## 🛠️ Available rake tasks
 
 ```bash
-rails pg_insights:status        # Check configuration
-rails pg_insights:health_check  # Run health checks manually
-rails pg_insights:stats         # Show usage statistics
-rails pg_insights:clear_data    # Clear stored data and caches
+# Configuration & Status
+rails pg_insights:status              # Check configuration and background job status
+rails pg_insights:test_jobs           # Test background job functionality
+
+# Health Checks
+rails pg_insights:health_check        # Run health checks manually (synchronous)
+rails pg_insights:stats              # Show usage statistics
+
+# Timeline & Snapshots
+rails pg_insights:collect_snapshot    # Collect a database snapshot immediately
+rails pg_insights:start_snapshots    # Start recurring snapshot collection
+rails pg_insights:snapshot_status    # Check snapshot configuration and status
+rails pg_insights:cleanup_snapshots  # Clean up old snapshots
+
+# Data Management
+rails pg_insights:reset              # Reset all PgInsights data (queries + health checks)
+rails pg_insights:clear_data         # Alias for reset (backward compatibility)
+rails pg_insights:cleanup            # Clean up old health check results (30+ days)
+
+# Development & Testing
+rails pg_insights:seed_timeline      # Generate fake timeline data for testing
+rails pg_insights:sample_data        # Generate sample health check data
 ```
 
 ## 🔒 Safety

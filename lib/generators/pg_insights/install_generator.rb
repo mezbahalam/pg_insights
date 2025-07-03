@@ -47,11 +47,28 @@ module PgInsights
         puts "Next steps:"
         puts "1. Run 'rails db:migrate' to create the necessary tables"
         puts "2. Review and customize 'config/initializers/pg_insights.rb'"
-        puts "3. Configure background jobs (optional, see initializer comments)"
-        puts "4. Visit '/pg_insights' in your browser to start using the dashboard"
+        puts "3. Test your setup: rails pg_insights:status"
+        puts "4. Configure background jobs (optional, see initializer comments)"
+        puts "5. Visit '/pg_insights' in your browser to start using the dashboard"
         puts ""
-        puts "For background job integration, see: config/initializers/pg_insights.rb"
-        puts "To check status: rails pg_insights:status"
+        puts "Features available:"
+        puts "• Health Dashboard: '/pg_insights/health' - Monitor database health"
+        puts "• Query Runner: '/pg_insights' - Run SQL queries with charts"
+        puts "• Timeline: '/pg_insights/timeline' - Track parameter changes over time"
+        puts ""
+        puts "Useful commands:"
+        puts "• Status check: rails pg_insights:status"
+        puts "• Test setup: rails pg_insights:test_jobs"
+        puts "• Collect snapshot: rails pg_insights:collect_snapshot"
+        puts "• Start snapshots: rails pg_insights:start_snapshots"
+        puts "• Snapshot status: rails pg_insights:snapshot_status"
+        puts ""
+        puts "For development/testing:"
+        puts "• Generate test data: rails pg_insights:seed_timeline"
+        puts "• View all commands: rails -T pg_insights"
+        puts ""
+        puts "Configuration: config/initializers/pg_insights.rb"
+        puts "Documentation: https://github.com/mezbahalam/pg_insights"
         puts "To uninstall: rails generate pg_insights:clean"
       end
 
@@ -81,7 +98,6 @@ module PgInsights
             config.background_job_queue = :pg_insights_health
 
             # === Cache and Timeout Settings ===
-          #{'  '}
             # How long to cache health check results before considering them stale
             # Stale results will trigger background refresh when accessed
             #
@@ -91,40 +107,75 @@ module PgInsights
             # Timeout for individual health check queries to prevent long-running queries
             # from blocking the application
             #
-            # Default: 10.seconds#{'  '}
+            # Default: 10.seconds
             config.health_check_timeout = 10.seconds
 
             # Maximum execution time for user queries in the insights interface
             #
             # Default: 30.seconds
             config.max_query_execution_time = 30.seconds
+
+            # === Timeline & Snapshot Settings ===
+            #
+            # The timeline feature captures daily snapshots of your database's
+            # performance metrics and configuration parameters.
+
+            # Enable or disable the timeline feature entirely.
+            # Disabling this will hide the timeline UI and stop snapshot collection.
+            #
+            # Default: true
+            config.enable_snapshots = true
+
+            # How often to collect a new database snapshot.
+            # This setting is used by the recurring snapshot job.
+            #
+            # Default: 1.day
+            config.snapshot_frequency = 1.day
+
+            # How long to keep snapshots before they are automatically deleted.
+            # Older snapshots will be pruned to save database space.
+            #
+            # Default: 90 (days)
+            config.snapshot_retention_days = 90
+
+            # A master switch to enable or disable the snapshot collection job.
+            # This is useful if you want to temporarily pause snapshot collection
+            # without disabling the entire feature.
+            #
+            # Default: true
+            config.snapshot_collection_enabled = true
           end
 
           # === Background Job Integration ===
           #
-          # If you want automatic recurring health checks, add one of these to your job scheduler:
+          # PgInsights works with or without background jobs:
+          # - WITH background jobs: Health checks run asynchronously (recommended)
+          # - WITHOUT background jobs: Health checks run synchronously (slower but works)
           #
-          # ** Whenever (crontab) **
-          # Add to config/schedule.rb:
+          # ** Test Your Setup **
+          # Check if background jobs are working:
+          #   rails pg_insights:status
+          #   rails pg_insights:test_jobs
+          #
+          # ** Automatic Recurring Health Checks (Optional) **
+          # If you want health checks to run automatically, add one of these to your job scheduler:
+          #
+          # Whenever (crontab) - Add to config/schedule.rb:
           #   every 1.hour do
           #     runner "PgInsights::RecurringHealthChecksJob.perform_later"
           #   end
           #
-          # ** Sidekiq-Cron **
-          # Add to config/initializers/sidekiq.rb:
+          # Sidekiq-Cron - Add to config/initializers/sidekiq.rb:
           #   Sidekiq::Cron::Job.create(
           #     name: 'PgInsights Health Checks',
           #     cron: '0 * * * *',
           #     class: 'PgInsights::RecurringHealthChecksJob'
           #   )
           #
-          # ** Manual Trigger **
-          # You can also trigger health checks manually:
-          #   PgInsights::HealthCheckService.refresh_all!
-          #
-          # ** Check Status **
-          # To verify your configuration:
-          #   rails pg_insights:status
+          # ** Manual Commands **
+          # Run health checks manually: rails pg_insights:health_check
+          # Collect snapshot now: rails pg_insights:collect_snapshot
+          # Start recurring snapshots: rails pg_insights:start_snapshots
 
           # === Environment-Specific Settings ===
           #

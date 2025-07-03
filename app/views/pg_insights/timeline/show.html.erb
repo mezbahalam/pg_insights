@@ -1,0 +1,1004 @@
+<div class="show-compact">
+  <!-- Compact Header -->
+  <div class="compact-header">
+    <div class="header-content">
+      <div class="header-main">
+        <h1>📸 Snapshot Details</h1>
+        <p>Captured <%= @snapshot.executed_at.strftime('%m/%d/%Y at %H:%M') %> • <%= @snapshot.execution_time_ms %>ms execution</p>
+      </div>
+      <div class="header-actions">
+        <a href="<%= timeline_path %>" class="btn-ghost">← Timeline</a>
+        <button onclick="exportSnapshot(event)" class="btn-primary">📥 Export</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Compact Key Metrics -->
+  <div class="metrics-row">
+    <div class="metric-compact success">
+      <div class="metric-icon">💾</div>
+      <div class="metric-data">
+        <span class="value"><%= ((@snapshot.result_data.dig('metrics', 'cache_hit_rate') || 0).to_f.round(1)) %>%</span>
+        <span class="label">Cache Hit</span>
+      </div>
+    </div>
+    
+    <div class="metric-compact info">
+      <div class="metric-icon">🔗</div>
+      <div class="metric-data">
+        <span class="value"><%= ((@snapshot.result_data.dig('metrics', 'total_connections') || 0).to_i) %></span>
+        <span class="label">Connections</span>
+      </div>
+    </div>
+    
+    <div class="metric-compact warning">
+      <div class="metric-icon">⏱️</div>
+      <div class="metric-data">
+        <span class="value"><%= ((@snapshot.result_data.dig('metrics', 'avg_query_time') || 0).to_f.round(1)) %>ms</span>
+        <span class="label">Avg Query</span>
+      </div>
+    </div>
+    
+    <div class="metric-compact neutral">
+      <div class="metric-icon">📊</div>
+      <div class="metric-data">
+        <span class="value"><%= @snapshot.executed_at.strftime('%H:%M') %></span>
+        <span class="label">Snapshot Time</span>
+      </div>
+    </div>
+
+    <div class="actions-compact">
+      <% if @previous_snapshot %>
+        <a href="<%= timeline_compare_path(date1: @previous_snapshot.executed_at.to_date, date2: @snapshot.executed_at.to_date) %>" class="btn-ghost">🔍 Compare</a>
+      <% end %>
+      <button onclick="refreshData()" class="btn-ghost">🔄 Refresh</button>
+    </div>
+  </div>
+
+  <!-- Compact Tabs -->
+  <div class="tab-container">
+    <div class="tab-header">
+      <button class="tab-btn active" onclick="showTab('overview')">📊 Overview</button>
+      <button class="tab-btn" onclick="showTab('parameters')">⚙️ Parameters</button>
+      <button class="tab-btn" onclick="showTab('performance')">📈 Performance</button>
+      <% if @previous_snapshot %>
+        <button class="tab-btn" onclick="showTab('comparison')">🔍 Comparison</button>
+      <% end %>
+    </div>
+
+    <!-- Overview Tab -->
+    <div id="overview-tab" class="tab-content active">
+      <div class="content-grid">
+        <!-- Main Metrics -->
+        <div class="panel metrics-panel">
+          <div class="panel-header">
+            <h3>📊 Performance Metrics</h3>
+            <span class="metrics-count"><%= (@snapshot.result_data['metrics'] || {}).count %> metrics</span>
+          </div>
+          <div class="metrics-compact">
+            <% if @snapshot.result_data['metrics'] %>
+              <% @snapshot.result_data['metrics'].each do |metric, value| %>
+                <div class="metric-row">
+                  <div class="metric-name"><%= metric.humanize %></div>
+                  <div class="metric-value">
+                    <%= metric.include?('rate') || metric.include?('percent') ? "#{value.to_f.round(2)}%" : value %>
+                  </div>
+                  <div class="metric-category">
+                    <%= case metric
+                        when /cache|hit/ then 'Memory'
+                        when /query|time/ then 'Performance' 
+                        when /connection/ then 'Concurrency'
+                        when /bloat|table/ then 'Storage'
+                        else 'Database'
+                        end %>
+                  </div>
+                </div>
+              <% end %>
+            <% else %>
+              <div class="empty-metrics">
+                <p>No metrics available</p>
+              </div>
+            <% end %>
+          </div>
+        </div>
+
+        <!-- Database Info -->
+        <div class="panel info-panel">
+          <div class="panel-header">
+            <h3>🏷️ Database Info</h3>
+          </div>
+          <div class="info-compact">
+            <% if @snapshot.result_data['metadata'] %>
+              <% @snapshot.result_data['metadata'].each do |key, value| %>
+                <div class="info-row">
+                  <span class="info-label"><%= key.humanize %></span>
+                  <span class="info-value">
+                    <% if key == 'extensions' && value.is_a?(Array) %>
+                      <%= value.count %> extensions
+                    <% else %>
+                      <%= value %>
+                    <% end %>
+                  </span>
+                </div>
+              <% end %>
+            <% else %>
+              <div class="empty-info">
+                <p>No metadata available</p>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Parameters Tab -->
+    <div id="parameters-tab" class="tab-content">
+      <div class="params-panel">
+        <div class="panel-header">
+          <h3>⚙️ PostgreSQL Configuration</h3>
+          <span class="params-count">
+            <%= (@snapshot.result_data['parameters'] || {}).count %> parameters
+          </span>
+        </div>
+        
+        <% if @snapshot.result_data['parameters'] %>
+          <div class="params-grid">
+            <% @snapshot.result_data['parameters'].each do |param, value| %>
+              <div class="param-row">
+                <div class="param-name">
+                  <code><%= param %></code>
+                </div>
+                <div class="param-value">
+                  <%= value %>
+                </div>
+                <div class="param-desc">
+                  <%= case param
+                      when 'shared_buffers' then 'Memory for buffer cache'
+                      when 'work_mem' then 'Memory for query operations'  
+                      when 'max_connections' then 'Max concurrent connections'
+                      when 'effective_cache_size' then 'Cache size for planning'
+                      when 'checkpoint_completion_target' then 'Checkpoint spread time'
+                      when 'wal_buffers' then 'WAL buffer memory'
+                      when 'default_statistics_target' then 'Statistics sampling'
+                      else 'Configuration parameter'
+                      end %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          <div class="empty-params">
+            <p>No parameter data available</p>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Performance Tab -->
+    <div id="performance-tab" class="tab-content">
+      <div class="perf-panel">
+        <div class="panel-header">
+          <h3>📈 Performance Analysis</h3>
+        </div>
+        
+        <% if @snapshot.result_data['metrics'] %>
+          <div class="perf-table">
+            <div class="table-header">
+              <div class="col-metric">Metric</div>
+              <div class="col-value">Value</div>
+              <div class="col-category">Category</div>
+              <div class="col-status">Status</div>
+            </div>
+            <div class="table-body">
+              <% @snapshot.result_data['metrics'].each do |metric, value| %>
+                <div class="table-row">
+                  <div class="col-metric">
+                    <span class="metric-title"><%= metric.humanize %></span>
+                  </div>
+                  <div class="col-value">
+                    <span class="value-display">
+                      <%= metric.include?('rate') || metric.include?('percent') ? "#{value.to_f.round(2)}%" : value %>
+                    </span>
+                  </div>
+                  <div class="col-category">
+                    <span class="category-tag category-<%= case metric
+                        when /cache|hit/ then 'memory'
+                        when /query|time/ then 'performance' 
+                        when /connection/ then 'concurrency'
+                        when /bloat|table/ then 'storage'
+                        else 'database'
+                        end %>">
+                      <%= case metric
+                          when /cache|hit/ then 'Memory'
+                          when /query|time/ then 'Performance' 
+                          when /connection/ then 'Concurrency'
+                          when /bloat|table/ then 'Storage'
+                          else 'Database'
+                          end %>
+                    </span>
+                  </div>
+                  <div class="col-status">
+                    <% 
+                      numeric_value = value.to_f
+                      status = if metric.include?('rate') || metric.include?('hit')
+                                 numeric_value > 95 ? 'excellent' : numeric_value > 85 ? 'good' : numeric_value > 70 ? 'ok' : 'attention'
+                               elsif metric.include?('time')
+                                 numeric_value < 10 ? 'excellent' : numeric_value < 50 ? 'good' : numeric_value < 100 ? 'ok' : 'attention'
+                               else
+                                 'neutral'
+                               end
+                    %>
+                    <span class="status-badge status-<%= status %>">
+                      <%= case status
+                          when 'excellent' then '🟢 Excellent'
+                          when 'good' then '🟡 Good'
+                          when 'ok' then '🟠 OK'
+                          when 'attention' then '🔴 Monitor'
+                          else '⚪ Normal'
+                          end %>
+                    </span>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% else %>
+          <div class="empty-perf">
+            <p>No performance data available</p>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Comparison Tab -->
+    <% if @previous_snapshot %>
+      <div id="comparison-tab" class="tab-content">
+        <div class="comp-panel">
+          <div class="panel-header">
+            <h3>🔍 Previous Snapshot Comparison</h3>
+            <span class="comp-time">
+              vs <%= @previous_snapshot.executed_at.strftime('%m/%d %H:%M') %>
+            </span>
+          </div>
+          
+          <% if @performance_comparison && @performance_comparison.any? %>
+            <div class="comp-grid">
+              <% @performance_comparison.each do |metric, comparison| %>
+                <div class="comp-item">
+                  <div class="comp-header">
+                    <div class="comp-metric"><%= metric.humanize %></div>
+                    <div class="comp-badge comp-<%= comparison[:direction] %>">
+                      <%= case comparison[:direction]
+                          when 'increase' then '📈 Up'
+                          when 'decrease' then '📉 Down'
+                          else '➡️ Stable'
+                          end %>
+                    </div>
+                  </div>
+                  <div class="comp-values">
+                    <div class="comp-before">
+                      <span class="comp-label">Before</span>
+                      <span class="comp-value"><%= comparison[:before] %></span>
+                    </div>
+                    <span class="comp-arrow">→</span>
+                    <div class="comp-after">
+                      <span class="comp-label">After</span>
+                      <span class="comp-value"><%= comparison[:after] %></span>
+                    </div>
+                  </div>
+                  <div class="comp-change">
+                    <%= comparison[:change_percent] >= 0 ? '+' : '' %><%= comparison[:change_percent].round(1) %>% change
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          <% else %>
+            <div class="empty-comp">
+              <p>No significant changes detected</p>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+
+  <!-- Action Bar -->
+  <div class="action-bar">
+    <div class="action-group">
+      <a href="<%= timeline_path %>" class="btn-secondary">← Back to Timeline</a>
+      <button onclick="window.print()" class="btn-ghost">🖨️ Print</button>
+    </div>
+    <div class="action-group">
+      <% if @previous_snapshot %>
+        <a href="<%= timeline_show_path(id: @previous_snapshot.id) %>" class="btn-ghost">← Previous</a>
+      <% end %>
+      <% if @next_snapshot %>
+        <a href="<%= timeline_show_path(id: @next_snapshot.id) %>" class="btn-ghost">Next →</a>
+      <% end %>
+      <button onclick="exportSnapshot()" class="btn-primary">📥 Export</button>
+    </div>
+  </div>
+</div>
+
+<!-- Compact Design System -->
+<style>
+:root {
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 20px;
+  
+  --text-xs: 11px;
+  --text-sm: 13px;
+  --text-base: 14px;
+  --text-lg: 16px;
+  --text-xl: 18px;
+  
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #3b82f6;
+  --neutral: #6b7280;
+  
+  --border: #e5e7eb;
+  --bg: #f9fafb;
+  --card: #ffffff;
+  --text: #111827;
+  --text-muted: #6b7280;
+}
+
+.show-compact {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: var(--space-lg);
+  background: var(--bg);
+  font-size: var(--text-base);
+  line-height: 1.4;
+}
+
+/* Compact Header */
+.compact-header {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: var(--space-lg);
+  margin-bottom: var(--space-lg);
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.compact-header h1 {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  margin: 0 0 2px 0;
+  color: var(--text);
+}
+
+.compact-header p {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.header-actions {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+/* Compact Metrics Row */
+.metrics-row {
+  display: flex;
+  gap: var(--space-lg);
+  margin-bottom: var(--space-lg);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.metric-compact {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: var(--space-md) var(--space-lg);
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  min-width: 130px;
+  position: relative;
+}
+
+.metric-compact.success::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--success); border-radius: 8px 8px 0 0; }
+.metric-compact.warning::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--warning); border-radius: 8px 8px 0 0; }
+.metric-compact.info::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--info); border-radius: 8px 8px 0 0; }
+.metric-compact.neutral::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--neutral); border-radius: 8px 8px 0 0; }
+
+.metric-icon {
+  font-size: var(--text-lg);
+}
+
+.metric-data {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.metric-data .value {
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1;
+}
+
+.metric-data .label {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  line-height: 1;
+}
+
+.actions-compact {
+  display: flex;
+  gap: var(--space-sm);
+  margin-left: auto;
+}
+
+/* Compact Tabs */
+.tab-container {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: var(--space-lg);
+}
+
+.tab-header {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.tab-btn {
+  flex: 1;
+  padding: var(--space-md) var(--space-lg);
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-right: 1px solid var(--border);
+}
+
+.tab-btn:last-child {
+  border-right: none;
+}
+
+.tab-btn:hover {
+  background: var(--card);
+  color: var(--text);
+}
+
+.tab-btn.active {
+  background: var(--card);
+  color: var(--info);
+  border-bottom: 2px solid var(--info);
+}
+
+.tab-content {
+  display: none;
+  padding: var(--space-lg);
+}
+
+.tab-content.active {
+  display: block;
+}
+
+/* Content Grid */
+.content-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--space-lg);
+}
+
+/* Panels */
+.panel, .params-panel, .perf-panel, .comp-panel {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.panel-header {
+  padding: var(--space-md) var(--space-lg);
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.panel-header h3 {
+  font-size: var(--text-base);
+  font-weight: 600;
+  margin: 0;
+  color: var(--text);
+}
+
+.metrics-count, .params-count, .comp-time {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  background: var(--card);
+  padding: 2px var(--space-xs);
+  border-radius: 4px;
+}
+
+/* Compact Metrics */
+.metrics-compact {
+  padding: var(--space-md);
+}
+
+.metric-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: var(--space-md);
+  align-items: center;
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.metric-row:last-child {
+  border-bottom: none;
+}
+
+.metric-name {
+  font-size: var(--text-sm);
+  color: var(--text);
+  font-weight: 500;
+}
+
+.metric-value {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text);
+  font-family: monospace;
+}
+
+.metric-category {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  background: var(--bg);
+  padding: 2px var(--space-xs);
+  border-radius: 4px;
+}
+
+/* Compact Info */
+.info-compact {
+  padding: var(--space-md);
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-xs) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.info-row:last-child {
+  border-bottom: none;
+}
+
+.info-label {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.info-value {
+  font-size: var(--text-sm);
+  color: var(--text);
+  font-weight: 600;
+  font-family: monospace;
+}
+
+/* Parameters Grid */
+.params-grid {
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.param-row {
+  display: grid;
+  grid-template-columns: 200px 1fr 1fr;
+  gap: var(--space-md);
+  align-items: center;
+  padding: var(--space-sm);
+  background: var(--bg);
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+
+.param-name code {
+  background: var(--card);
+  padding: 2px var(--space-xs);
+  border-radius: 4px;
+  font-size: var(--text-xs);
+  color: var(--info);
+}
+
+.param-value {
+  font-size: var(--text-sm);
+  font-family: monospace;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.param-desc {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+/* Performance Table */
+.perf-table {
+  margin: var(--space-md);
+}
+
+.table-header {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--bg);
+  border-bottom: 2px solid var(--border);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.table-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.table-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: var(--space-md);
+  align-items: center;
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: 1px solid var(--border);
+}
+
+.table-row:last-child {
+  border-bottom: none;
+}
+
+.metric-title {
+  font-size: var(--text-sm);
+  color: var(--text);
+  font-weight: 500;
+}
+
+.value-display {
+  font-size: var(--text-sm);
+  font-family: monospace;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.category-tag {
+  font-size: var(--text-xs);
+  padding: 2px var(--space-xs);
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.category-memory { background: #eff6ff; color: var(--info); }
+.category-performance { background: #f0fdf4; color: var(--success); }
+.category-concurrency { background: #fffbeb; color: var(--warning); }
+.category-storage { background: #fef2f2; color: var(--danger); }
+.category-database { background: var(--bg); color: var(--neutral); }
+
+.status-badge {
+  font-size: var(--text-xs);
+  padding: 2px var(--space-xs);
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.status-excellent { background: #f0fdf4; color: var(--success); }
+.status-good { background: #fffbeb; color: var(--warning); }
+.status-ok { background: #fff7ed; color: #ea580c; }
+.status-attention { background: #fef2f2; color: var(--danger); }
+.status-neutral { background: var(--bg); color: var(--neutral); }
+
+/* Comparison Grid */
+.comp-grid {
+  padding: var(--space-md);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--space-md);
+}
+
+.comp-item {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: var(--space-md);
+}
+
+.comp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-sm);
+}
+
+.comp-metric {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.comp-badge {
+  font-size: var(--text-xs);
+  padding: 2px var(--space-xs);
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.comp-increase { background: #fef2f2; color: var(--danger); }
+.comp-decrease { background: #f0fdf4; color: var(--success); }
+.comp-stable { background: var(--bg); color: var(--neutral); }
+
+.comp-values {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
+}
+
+.comp-before, .comp-after {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+}
+
+.comp-label {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.comp-value {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text);
+  font-family: monospace;
+}
+
+.comp-arrow {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.comp-change {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  text-align: center;
+  font-style: italic;
+}
+
+/* Action Bar */
+.action-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: var(--space-lg);
+}
+
+.action-group {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+/* Buttons */
+.btn-primary, .btn-secondary, .btn-ghost {
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  padding: var(--space-sm) var(--space-lg);
+  font-size: var(--text-sm);
+}
+
+.btn-primary {
+  background: var(--info);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: var(--neutral);
+  color: white;
+}
+
+.btn-secondary:hover {
+  background: #4b5563;
+  transform: translateY(-1px);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
+.btn-ghost:hover {
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* Empty States */
+.empty-metrics, .empty-info, .empty-params, .empty-perf, .empty-comp {
+  text-align: center;
+  padding: var(--space-xl);
+  color: var(--text-muted);
+}
+
+.empty-metrics p, .empty-info p, .empty-params p, .empty-perf p, .empty-comp p {
+  font-size: var(--text-sm);
+  margin: 0;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .comp-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .show-compact {
+    padding: var(--space-md);
+  }
+  
+  .metrics-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-sm);
+  }
+  
+  .actions-compact {
+    grid-column: 1 / -1;
+    justify-content: center;
+    margin: var(--space-md) 0 0 0;
+  }
+  
+  .tab-header {
+    flex-direction: column;
+  }
+  
+  .tab-btn {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+  
+  .tab-btn:last-child {
+    border-bottom: none;
+  }
+  
+  .param-row {
+    grid-template-columns: 1fr;
+    gap: var(--space-sm);
+  }
+  
+  .table-header, .table-row {
+    grid-template-columns: 1fr;
+    gap: var(--space-xs);
+  }
+  
+  .action-bar {
+    flex-direction: column;
+    gap: var(--space-md);
+  }
+  
+  .action-group {
+    justify-content: center;
+  }
+}
+</style>
+
+<script>
+function showTab(tabName) {
+  // Hide all tabs
+  document.querySelectorAll('.tab-content').forEach(tab => {
+    tab.classList.remove('active');
+  });
+  
+  // Hide all tab buttons
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  
+  // Show selected tab
+  document.getElementById(tabName + '-tab').classList.add('active');
+  
+  // Activate button
+  event.target.classList.add('active');
+}
+
+function exportSnapshot() {
+  const button = event.target;
+  const originalText = button.innerHTML;
+  button.innerHTML = '⏳ Exporting...';
+  button.disabled = true;
+
+  // Simulate export process
+  setTimeout(() => {
+    button.innerHTML = originalText;
+    button.disabled = false;
+    showToast('✅ Snapshot exported successfully', 'success');
+  }, 1500);
+}
+
+function refreshData() {
+  const button = event.target;
+  const originalText = button.innerHTML;
+  button.innerHTML = '⏳ Refreshing...';
+  button.disabled = true;
+
+  // Simulate refresh process
+  setTimeout(() => {
+    button.innerHTML = originalText;
+    button.disabled = false;
+    location.reload();
+  }, 2000);
+}
+
+function showToast(message, type) {
+  const toast = document.createElement('div');
+  toast.innerHTML = message;
+  toast.style.cssText = `
+    position: fixed; top: 20px; right: 20px; padding: 8px 12px; border-radius: 6px;
+    font-size: 13px; font-weight: 600; z-index: 1000; max-width: 300px;
+    background: ${type === 'success' ? '#10b981' : '#ef4444'}; color: white;
+    animation: slideIn 0.3s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  `;
+  
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 4000);
+}
+
+// CSS animation
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+`;
+document.head.appendChild(style);
+</script>

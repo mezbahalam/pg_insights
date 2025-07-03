@@ -1,14 +1,11 @@
 PgInsights::Engine.routes.draw do
   root "insights#index"
 
-  # For running queries and loading the main UI
   post "/", to: "insights#index"
-
-  # For the table name dropdown
   get :table_names, to: "insights#table_names"
 
-  # For managing user-saved queries
-  resources :queries, only: [ :create, :update, :destroy ]  # For the health dashboard
+  resources :queries, only: [ :create, :update, :destroy ]
+
   get :health, to: "health#index"
   namespace :health do
     get :unused_indexes
@@ -19,4 +16,11 @@ PgInsights::Engine.routes.draw do
     get :parameter_settings
     post :refresh
   end
+
+  get :timeline, to: "timeline#index"
+  get "timeline/compare", to: "timeline#compare", as: :timeline_compare
+  get "timeline/export", to: "timeline#export", as: :timeline_export
+  get "timeline/status", to: "timeline#status", as: :timeline_status
+  post "timeline/refresh", to: "timeline#refresh", as: :timeline_refresh
+  get "timeline/:id", to: "timeline#show", as: :timeline_show
 end
