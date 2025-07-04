@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2025-07-04
+
+### Fixed
+- **Installation Generator**: Fixed `rails generate pg_insights:install` command that was failing with "Could not find migration files" error
+  - Migration template files were not being packaged with the gem due to incorrect file paths
+  - Moved migration files from `db/migrate/` to `lib/generators/pg_insights/templates/db/migrate/` 
+  - Updated generator source path to correctly locate template files
+  - This ensures the install generator works properly for all users installing the gem
+
 ## [0.2.0] - 2025-07-03
 
 ### Added
