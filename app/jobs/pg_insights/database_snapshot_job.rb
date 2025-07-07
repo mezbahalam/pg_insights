@@ -2,8 +2,6 @@
 
 module PgInsights
   class DatabaseSnapshotJob < ApplicationJob
-    queue_as -> { PgInsights.background_job_queue }
-
     rescue_from(StandardError) do |exception|
       Rails.logger.error "PgInsights::DatabaseSnapshotJob failed: #{exception.message}"
     end
