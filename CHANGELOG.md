@@ -15,18 +15,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Logs now clearly show the actual queue name (e.g., `pg_insights_health`) instead of `#<Proc:0x000000017e1c6b30...>`
   - Removed duplicate `queue_as` declarations from individual job classes - they now properly inherit from ApplicationJob
   - Improved debugging experience and monitoring clarity for background jobs
+- **Timeline Data Fetching and Ordering**: Fixed timeline data bugs introduced during database optimization
+  - Fixed incomplete data issue where timeline was limited to 90 snapshots before filtering to 30 days
+  - Fixed incorrect ordering where timeline charts displayed backwards (newest-first instead of oldest-first)
+  - Timeline data now correctly fetches ALL snapshots from last 30 days with proper chronological ordering
 
 ### Improved
-- **Database Query Optimization**: Optimized timeline controller to reduce duplicate database queries
-  - Added `build_timeline_data` method to work with already-loaded snapshots instead of making additional queries
-  - Updated `timeline_data` method to accept optional `parameter_changes` parameter to avoid redundant calls
+- **Database Query Optimization**: Optimized parameter changes queries to avoid redundant calls
   - Enhanced query reuse patterns in timeline data collection
-  - Better performance for timeline page loads
+  - Maintains performance improvements while preserving correct data fetching behavior
 
 ### Technical Improvements
 - Cleaner ActiveJob inheritance pattern with centralized queue configuration
-- Improved database query efficiency in timeline operations
 - Better code organization with reduced duplication
+- Proper timeline data handling with correct ordering and complete data sets
 
 ## [0.2.1] - 2025-07-04
 
