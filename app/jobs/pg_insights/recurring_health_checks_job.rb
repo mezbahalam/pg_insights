@@ -2,8 +2,6 @@
 
 module PgInsights
   class RecurringHealthChecksJob < ApplicationJob
-    queue_as -> { PgInsights.background_job_queue }
-
     rescue_from(StandardError) do |exception|
       Rails.logger.error "PgInsights::RecurringHealthChecksJob failed: #{exception.message}"
     end

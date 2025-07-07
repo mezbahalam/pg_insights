@@ -2,8 +2,6 @@
 
 module PgInsights
   class HealthCheckJob < ApplicationJob
-    queue_as -> { PgInsights.background_job_queue }
-
     rescue_from(StandardError) do |exception|
       Rails.logger.error "PgInsights::HealthCheckJob failed: #{exception.message}"
     end
@@ -24,10 +22,6 @@ module PgInsights
       rescue => e
         Rails.logger.error "PgInsights: Background health check failed for #{check_type}: #{e.message}"
       end
-    end
-
-    def self.queue_name
-      PgInsights.background_job_queue
     end
 
     def self.perform_check(check_type, options = {})
