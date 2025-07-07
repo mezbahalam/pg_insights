@@ -121,19 +121,23 @@ module PgInsights
       deleted_count
     end
 
-    def self.timeline_data(days = 30)
+    def self.timeline_data(days = 30, parameter_changes = nil)
       snapshots = by_type("database_snapshot")
                     .successful
                     .where("executed_at >= ?", days.days.ago)
                     .order(:executed_at)
 
+      build_timeline_data(snapshots, parameter_changes || detect_parameter_changes_since(days))
+    end
+
+    def self.build_timeline_data(snapshots, parameter_changes)
       {
         dates: snapshots.map { |s| s.executed_at.strftime("%Y-%m-%d %H:%M") },
         cache_hit_rates: snapshots.map { |s| (s.result_data.dig("metrics", "cache_hit_rate") || 0).to_f },
         avg_query_times: snapshots.map { |s| (s.result_data.dig("metrics", "avg_query_time") || 0).to_f },
         bloated_tables: snapshots.map { |s| (s.result_data.dig("metrics", "bloated_tables") || 0).to_i },
         total_connections: snapshots.map { |s| (s.result_data.dig("metrics", "total_connections") || 0).to_i },
-        parameter_changes: detect_parameter_changes_since(days)
+        parameter_changes: parameter_changes
       }
     end
 
