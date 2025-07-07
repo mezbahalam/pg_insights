@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2025-07-07
+
+### Fixed
+- **ActiveJob Queue Naming**: Fixed confusing queue logging that showed lambda object references instead of actual queue names
+  - Changed from lambda syntax `queue_as -> { }` to block syntax `queue_as do ... end` in ApplicationJob
+  - Logs now clearly show the actual queue name (e.g., `pg_insights_health`) instead of `#<Proc:0x000000017e1c6b30...>`
+  - Removed duplicate `queue_as` declarations from individual job classes - they now properly inherit from ApplicationJob
+  - Improved debugging experience and monitoring clarity for background jobs
+
+### Improved
+- **Database Query Optimization**: Optimized timeline controller to reduce duplicate database queries
+  - Added `build_timeline_data` method to work with already-loaded snapshots instead of making additional queries
+  - Updated `timeline_data` method to accept optional `parameter_changes` parameter to avoid redundant calls
+  - Enhanced query reuse patterns in timeline data collection
+  - Better performance for timeline page loads
+
+### Technical Improvements
+- Cleaner ActiveJob inheritance pattern with centralized queue configuration
+- Improved database query efficiency in timeline operations
+- Better code organization with reduced duplication
+
 ## [0.2.1] - 2025-07-04
 
 ### Fixed
