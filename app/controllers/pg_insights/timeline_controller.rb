@@ -13,8 +13,7 @@ module PgInsights
 
       @snapshots = HealthCheckResult.snapshots(90)
       @parameter_changes = HealthCheckResult.detect_parameter_changes_since(30)
-      timeline_snapshots = @snapshots.select { |s| s.executed_at >= 30.days.ago }
-      @timeline_data = HealthCheckResult.build_timeline_data(timeline_snapshots, @parameter_changes)
+      @timeline_data = HealthCheckResult.timeline_data(30, @parameter_changes)
       @stats = calculate_timeline_stats(@snapshots)
     end
 
