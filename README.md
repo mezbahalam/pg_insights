@@ -273,10 +273,36 @@ bundle exec rake spec
 
 MIT License. See [LICENSE](MIT-LICENSE) file.
 
----
+## 🙏 Special Thanks
 
 <div align="center">
 
-Built by [Mezbah Alam](https://github.com/mezbahalam) • Inspired by pg_hero and other database monitoring tools
+> *"Great mentors don't just teach you how to write code, they inspire you to build something meaningful."*
+
+<img src="https://github.com/keithdoggett.png" alt="Keith Doggett" width="80" height="80" style="border-radius: 50%; margin: 10px 0;"/>
+
+**Special thanks to [Keith Doggett](https://github.com/keithdoggett) ([@keithdoggett](https://github.com/keithdoggett))**  
+*Team Lead & Technical Mentor*
+
+This gem wouldn't exist without Keith's exceptional guidance and inspiration. His deep PostgreSQL expertise, thoughtful code reviews, and ability to ask the right questions at the right time helped transform a simple idea into a robust tool that the Rails community can actually use.
+
+Keith taught me that the best database monitoring tools are the ones that get out of your way and just work. That philosophy is baked into every line of PgInsights, and it's made this gem infinitely better.
+
+**Thank you, Keith, for being the kind of leader who doesn't just manage a team, but elevates everyone on it.**
 
 </div>
+
+---
+
+<p align="center">
+  <sub>
+    Built with&nbsp;<span role="img" aria-label="love">❤️</span>&nbsp;by
+    <a href="https://github.com/mezbahalam"><strong>Mezbah Alam</strong></a>
+  </sub>
+  <br />
+  <sub>
+    Inspired by&nbsp;<a href="https://github.com/ankane/pghero"><strong>pg_hero</strong></a>
+    and other&nbsp;database-monitoring&nbsp;tools
+  </sub>
+</p>
+
