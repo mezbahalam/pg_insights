@@ -279,16 +279,8 @@ MIT License. See [LICENSE](MIT-LICENSE) file.
 
 > *"Great mentors don't just teach you how to write code, they inspire you to build something meaningful."*
 
-<img src="https://github.com/keithdoggett.png" alt="Keith Doggett" width="80" height="80" style="border-radius: 50%; margin: 10px 0;"/>
-
 **Special thanks to [Keith Doggett](https://github.com/keithdoggett) ([@keithdoggett](https://github.com/keithdoggett))**  
 *Team Lead & Technical Mentor*
-
-This gem wouldn't exist without Keith's exceptional guidance and inspiration. His deep PostgreSQL expertise, thoughtful code reviews, and ability to ask the right questions at the right time helped transform a simple idea into a robust tool that the Rails community can actually use.
-
-Keith taught me that the best database monitoring tools are the ones that get out of your way and just work. That philosophy is baked into every line of PgInsights, and it's made this gem infinitely better.
-
-**Thank you, Keith, for being the kind of leader who doesn't just manage a team, but elevates everyone on it.**
 
 </div>
 
