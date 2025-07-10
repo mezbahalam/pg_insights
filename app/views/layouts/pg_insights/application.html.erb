@@ -7,7 +7,11 @@
   <meta name="csrf-token" content="<%= form_authenticity_token %>">
   <%#= favicon_link_tag "favicon.png" %>
   <%= stylesheet_link_tag "pg_insights/application", media: "all" %>
+  <%= stylesheet_link_tag "pg_insights/results", media: "all" %>
+  <%= stylesheet_link_tag "pg_insights/health", media: "all" %>
   <%= javascript_include_tag "pg_insights/application", nonce: true %>
+  <%= javascript_include_tag "pg_insights/results", nonce: true %>
+  <%= javascript_include_tag "pg_insights/health", nonce: true %>
 
 </head>
 <body>
