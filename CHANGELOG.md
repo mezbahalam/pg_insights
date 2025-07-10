@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2025-01-15
+
+### Fixed
+- **Results Table CSS Loading**: Fixed broken table design in query results
+  - Added explicit stylesheet includes for `pg_insights/results.css` and `pg_insights/health.css`
+  - Added explicit JavaScript includes for `pg_insights/results.js` and `pg_insights/health.js`
+  - Resolved issue where `require_tree .` directive wasn't loading all CSS files properly
+  - Tables now display with proper styling, fonts, colors, and responsive design
+  - Fixed view toggle functionality and table interactive features
+
 ## [0.3.0] - 2025-07-07
 
 ### Fixed
