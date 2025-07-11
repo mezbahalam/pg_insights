@@ -1,4 +1,3 @@
-//= require_tree ./results
 
 document.addEventListener('DOMContentLoaded', function() {
   if (!document.querySelector('.results-section')) return;

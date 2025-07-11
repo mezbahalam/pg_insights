@@ -1,6 +1,3 @@
-//= require chartkick
-//= require Chart.bundle
-//= require_tree .
 
 
 // PG Insights JavaScript
