@@ -1,0 +1,104 @@
+<div id="compare-view" class="view-content" style="display: none;">
+  <div class="compare-container">
+    <!-- Query Selection Header -->
+    <div class="compare-header">
+      <div class="query-selector">
+        <div class="query-card query-a">
+          <div class="query-label">Query A</div>
+          <div class="query-title" id="compare-title-a">Select a query</div>
+          <div class="query-summary" id="compare-summary-a"></div>
+        </div>
+        
+        <div class="vs-indicator">
+          <span class="vs-text">VS</span>
+          <button class="swap-btn" onclick="swapQueries()" title="Swap queries">
+            🔄
+          </button>
+        </div>
+        
+        <div class="query-card query-b">
+          <div class="query-label">Query B</div>
+          <div class="query-title" id="compare-title-b">Select a query</div>
+          <div class="query-summary" id="compare-summary-b"></div>
+        </div>
+      </div>
+      
+      <div class="compare-actions">
+        <button class="btn-analyze" onclick="performComparison()">
+          📊 Analyze Comparison
+        </button>
+      </div>
+    </div>
+
+    <!-- Comparison Results -->
+    <div id="comparison-results" class="comparison-results" style="display: none;">
+      <!-- Performance Comparison Table -->
+      <div class="performance-comparison">
+        <h4>⚡ Performance Comparison</h4>
+        <div class="metrics-table-wrapper">
+          <table class="metrics-table">
+            <thead>
+              <tr>
+                <th>Metric</th>
+                <th>Query A</th>
+                <th>Query B</th>
+                <th>Difference</th>
+              </tr>
+            </thead>
+            <tbody id="metrics-table-body">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Winner Summary -->
+      <div class="winner-summary" id="winner-summary">
+        <div class="winner-badge">
+          <span class="winner-icon">🏆</span>
+          <span class="winner-text">Query A performs better overall</span>
+        </div>
+      </div>
+
+      <!-- Side by Side Plans -->
+      <div class="plans-comparison">
+        <h4>🌳 Execution Plans</h4>
+        <div class="plans-grid">
+          <div class="plan-column">
+            <h5>Query A Plan</h5>
+            <div class="plan-content" id="plan-a-content">
+              <!-- Plan tree content -->
+            </div>
+          </div>
+          <div class="plan-column">
+            <h5>Query B Plan</h5>
+            <div class="plan-content" id="plan-b-content">
+              <!-- Plan tree content -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Insights & Recommendations -->
+      <div class="insights-comparison" id="insights-section">
+        <h4>💡 Key Insights</h4>
+        <div class="insights-list" id="insights-list">
+          <!-- Dynamically populated insights -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div id="comparison-loading" class="comparison-loading" style="display: none;">
+      <div class="loading-spinner"></div>
+      <p>Comparing queries...</p>
+    </div>
+
+    <!-- Empty State -->
+    <div id="comparison-empty" class="comparison-empty">
+      <div class="empty-icon">⚖️</div>
+      <h3>Ready to Compare</h3>
+      <p>Select 2 queries from the history bar above to start comparing their performance and execution plans.</p>
+    </div>
+  </div>
+</div> 

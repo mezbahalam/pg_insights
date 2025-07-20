@@ -101,6 +101,76 @@ module PgInsights
       render json: { tables: [] }
     end
 
+    def query_history
+      @executions = QueryExecution.recent_history(10)
+
+      executions_data = @executions.map do |execution|
+        {
+          id: execution.id,
+          title: execution.display_title,
+          summary: execution.display_summary,
+          performance_class: execution.performance_class,
+          created_at: execution.created_at.strftime("%m/%d %H:%M"),
+          total_time_ms: execution.total_time_ms,
+          query_cost: execution.query_cost,
+          sql_text: execution.sql_text
+        }
+      end
+
+      respond_to do |format|
+        format.json { render json: executions_data }
+        format.html { redirect_to root_path }
+      end
+    end
+
+            def compare
+      # Handle nested parameters from form submission
+      execution_ids = params[:execution_ids] || params.dig(:insight, :execution_ids)
+
+      if execution_ids.blank? || execution_ids.size != 2
+        error_response = { error: "Please select exactly 2 queries to compare" }
+        respond_to do |format|
+          format.json { render json: error_response, status: :bad_request }
+          format.html { redirect_to root_path, alert: error_response[:error] }
+        end
+        return
+      end
+
+      begin
+                @execution_a = QueryExecution.find(execution_ids[0])
+        @execution_b = QueryExecution.find(execution_ids[1])
+
+        # Performance logging
+        Rails.logger.info "PgInsights: Comparing query executions #{@execution_a.id} vs #{@execution_b.id}"
+
+        start_time = Time.current
+        @comparison_data = generate_comparison_data(@execution_a, @execution_b)
+        comparison_duration = ((Time.current - start_time) * 1000).round(2)
+
+        Rails.logger.info "PgInsights: Comparison completed in #{comparison_duration}ms"
+
+        respond_to do |format|
+          format.json { render json: @comparison_data }
+          format.html { redirect_to root_path, notice: "Comparison completed" }
+        end
+      rescue ActiveRecord::RecordNotFound => e
+        error_response = { error: "One or both query executions not found" }
+        respond_to do |format|
+          format.json { render json: error_response, status: :not_found }
+          format.html { redirect_to root_path, alert: error_response[:error] }
+        end
+      rescue => e
+        Rails.logger.error "Comparison failed: #{e.message}"
+        Rails.logger.error e.backtrace.join("\n")
+
+        error_response = { error: "Comparison failed: #{e.message}" }
+        respond_to do |format|
+          format.json { render json: error_response, status: :internal_server_error }
+          format.html { redirect_to root_path, alert: error_response[:error] }
+        end
+      end
+    end
+
     private
 
     def determine_execution_type
@@ -203,6 +273,134 @@ module PgInsights
 
     def append_limit(sql, n)
       "#{sql.strip} LIMIT #{n}"
+    end
+
+        def generate_comparison_data(exec_a, exec_b)
+      begin
+        {
+          executions: {
+                      a: {
+            id: exec_a.id,
+            title: exec_a.respond_to?(:display_title) ? exec_a.display_title : "Query ##{exec_a.id}",
+            summary: exec_a.respond_to?(:display_summary) ? exec_a.display_summary : "",
+            sql_text: exec_a.sql_text,
+            metrics: extract_metrics(exec_a)
+          },
+          b: {
+            id: exec_b.id,
+            title: exec_b.respond_to?(:display_title) ? exec_b.display_title : "Query ##{exec_b.id}",
+            summary: exec_b.respond_to?(:display_summary) ? exec_b.display_summary : "",
+            sql_text: exec_b.sql_text,
+            metrics: extract_metrics(exec_b)
+          }
+          },
+          comparison: {
+            performance: calculate_performance_diff(exec_a, exec_b),
+            winner: determine_winner(exec_a, exec_b),
+            insights: generate_insights(exec_a, exec_b)
+          }
+        }
+      rescue => e
+        Rails.logger.error "Error in generate_comparison_data: #{e.message}"
+        Rails.logger.error "exec_a class: #{exec_a.class.name}, exec_b class: #{exec_b.class.name}"
+        Rails.logger.error e.backtrace.join("\n")
+        raise e
+      end
+    end
+
+    def extract_metrics(execution)
+      {
+        total_time_ms: execution.total_time_ms,
+        planning_time_ms: execution.planning_time_ms,
+        execution_time_ms: execution.execution_time_ms,
+        query_cost: execution.query_cost,
+        rows_returned: execution.result_rows_count,
+        rows_scanned: extract_rows_scanned(execution)
+      }
+    end
+
+    def calculate_performance_diff(exec_a, exec_b)
+      return {} unless exec_a.total_time_ms && exec_b.total_time_ms
+
+      time_diff_pct = ((exec_a.total_time_ms - exec_b.total_time_ms) / exec_a.total_time_ms * 100).round(1)
+      cost_diff_pct = if exec_a.query_cost && exec_b.query_cost
+        ((exec_a.query_cost - exec_b.query_cost) / exec_a.query_cost * 100).round(1)
+      else
+        nil
+      end
+
+      {
+        time_difference_pct: time_diff_pct,
+        cost_difference_pct: cost_diff_pct,
+        time_faster: time_diff_pct > 0 ? "b" : "a",
+        cost_cheaper: cost_diff_pct && cost_diff_pct > 0 ? "b" : "a"
+      }
+    end
+
+    def determine_winner(exec_a, exec_b)
+      return "unknown" unless exec_a.total_time_ms && exec_b.total_time_ms
+      exec_a.total_time_ms < exec_b.total_time_ms ? "a" : "b"
+    end
+
+    def generate_insights(exec_a, exec_b)
+      insights = []
+
+      if exec_a.total_time_ms && exec_b.total_time_ms
+        time_diff_pct = ((exec_a.total_time_ms - exec_b.total_time_ms).abs / [ exec_a.total_time_ms, exec_b.total_time_ms ].max * 100).round(1)
+
+        if time_diff_pct > 20
+          faster_query = exec_a.total_time_ms < exec_b.total_time_ms ? "Query A" : "Query B"
+          insights << "#{faster_query} is #{time_diff_pct}% faster in execution time"
+        end
+      end
+
+      # Add plan structure insights
+      if has_sequential_scan?(exec_a) && !has_sequential_scan?(exec_b)
+        insights << "Query B uses index scans while Query A uses sequential scans"
+      elsif has_sequential_scan?(exec_b) && !has_sequential_scan?(exec_a)
+        insights << "Query A uses index scans while Query B uses sequential scans"
+      end
+
+      insights
+    end
+
+    def extract_rows_scanned(execution)
+      return nil unless execution.execution_plan.present?
+
+      plan = execution.execution_plan.is_a?(Array) ? execution.execution_plan[0] : execution.execution_plan
+      extract_total_rows_from_plan(plan&.dig("Plan"))
+    end
+
+    def extract_total_rows_from_plan(node)
+      return 0 unless node
+
+      current_rows = node["Actual Rows"] || 0
+      child_rows = 0
+
+      if node["Plans"]&.any?
+        child_rows = node["Plans"].sum { |child| extract_total_rows_from_plan(child) }
+      end
+
+      current_rows + child_rows
+    end
+
+    def has_sequential_scan?(execution)
+      return false unless execution.execution_plan.present?
+
+      plan = execution.execution_plan.is_a?(Array) ? execution.execution_plan[0] : execution.execution_plan
+      check_for_seq_scan(plan&.dig("Plan"))
+    end
+
+    def check_for_seq_scan(node)
+      return false unless node
+
+      return true if node["Node Type"]&.include?("Seq Scan")
+
+      if node["Plans"]&.any?
+        return node["Plans"].any? { |child| check_for_seq_scan(child) }
+      end
+
+      false
     end
   end
 end

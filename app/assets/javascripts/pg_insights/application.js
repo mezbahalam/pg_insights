@@ -439,6 +439,17 @@ document.addEventListener('DOMContentLoaded', function() {
       window.clearQuery = () => this.clearQuery();
       window.copyCurrentQuery = () => this.copyCurrentQuery();
       window.saveCurrentQuery = () => this.saveCurrentQuery();
+      
+      // Listen for form submissions and trigger history refresh
+      const form = document.querySelector('.insights-container form');
+      if (form) {
+        form.addEventListener('submit', () => {
+          // Delay to allow the analysis to complete
+          setTimeout(() => {
+            document.dispatchEvent(new CustomEvent('analysisCompleted'));
+          }, 2000);
+        });
+      }
 
       // Table preview dropdown
       const tableSelect = document.getElementById('table-preview-select');

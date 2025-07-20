@@ -6,7 +6,8 @@ function initViewToggles() {
     stats: document.getElementById('stats-view'),
     plan: document.getElementById('plan-view'),
     perf: document.getElementById('perf-view'),
-    visual: document.getElementById('visual-view')
+    visual: document.getElementById('visual-view'),
+    compare: document.getElementById('compare-view')
   };
 
   toggleBtns.forEach(function(btn) {

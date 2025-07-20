@@ -2,6 +2,8 @@
 
 module PgInsights
   class QueryExecution < ApplicationRecord
+    self.table_name = "pg_insights_query_executions"
+
     belongs_to :query, class_name: "PgInsights::Query", optional: true
 
     EXECUTION_TYPES = %w[execute analyze both].freeze
@@ -16,6 +18,8 @@ module PgInsights
     scope :failed, -> { where(status: "failed") }
     scope :with_analysis, -> { where(execution_type: [ "analyze", "both" ]) }
     scope :with_results, -> { where(execution_type: [ "execute", "both" ]) }
+    scope :analyzable, -> { completed.with_analysis.where.not(execution_plan: nil) }
+    scope :recent_history, ->(limit = 10) { analyzable.recent.limit(limit) }
 
     # Status management
     def pending?
@@ -136,6 +140,28 @@ module PgInsights
         error_message: error_msg,
         error_detail: error_detail
       )
+    end
+
+    # History display helpers (public methods)
+    def display_title
+      return sql_text.truncate(50) if sql_text.present?
+      "Query ##{id}"
+    end
+
+    def display_summary
+      parts = []
+      parts << "#{formatted_total_time}" if total_time_ms.present?
+      parts << "Cost: #{formatted_query_cost}" if query_cost.present?
+      parts << "#{result_rows_count} rows" if result_rows_count.present?
+      parts.join(" • ")
+    end
+
+    def performance_class
+      return "performance-excellent" if total_time_ms && total_time_ms < 50
+      return "performance-good" if total_time_ms && total_time_ms < 200
+      return "performance-fair" if total_time_ms && total_time_ms < 1000
+      return "performance-poor" if total_time_ms && total_time_ms >= 1000
+      "performance-unknown"
     end
 
     private

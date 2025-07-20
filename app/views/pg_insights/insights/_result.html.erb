@@ -17,6 +17,9 @@
     <%= render "perf_view", execution: @query_execution %>
     <%= render "visual_view", execution: @query_execution %>
   <% end %>
+  
+  <!-- Compare View (always available) -->
+  <%= render "compare_view" %>
   </div>
 <% elsif flash.now[:alert] %>
   <div class="results-section">

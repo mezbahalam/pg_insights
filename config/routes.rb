@@ -7,6 +7,8 @@ PgInsights::Engine.routes.draw do
   # Query analysis endpoints
   post :analyze, to: "insights#analyze"
   get "execution/:id", to: "insights#execution_status", as: :execution_status
+  get :query_history, to: "insights#query_history", defaults: { format: :json }
+  post :compare, to: "insights#compare", defaults: { format: :json }
 
   resources :queries, only: [ :create, :update, :destroy ]
 
