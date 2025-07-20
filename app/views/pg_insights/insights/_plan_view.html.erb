@@ -1,0 +1,38 @@
+<div id="plan-view" class="view-content"<%= ' style="display: none;"'.html_safe unless @execution_type == 'analyze' && !@result.present? %>>
+  <div class="analysis-dashboard">
+    <!-- Compact Header with Key Metrics -->
+    <div class="analysis-header">
+      <div class="metric-chips">
+        <div class="chip primary">
+          <span class="chip-label">Cost</span>
+          <span class="chip-value"><%= execution.query_cost&.round(1) || 'N/A' %></span>
+        </div>
+        <div class="chip success">
+          <span class="chip-label">Time</span>
+          <span class="chip-value"><%= execution.execution_time_ms ? "#{execution.execution_time_ms.round(1)}ms" : 'N/A' %></span>
+        </div>
+        <div class="chip info">
+          <span class="chip-label">Planning</span>
+          <span class="chip-value"><%= execution.planning_time_ms ? "#{execution.planning_time_ms.round(1)}ms" : 'N/A' %></span>
+        </div>
+      </div>
+      <div class="execution-summary">
+        <span class="summary-text"><%= execution.plan_summary %></span>
+      </div>
+    </div>
+
+    <!-- Visual Execution Plan -->
+    <div class="plan-visualization">
+      <% if execution.execution_plan.present? %>
+        <div class="plan-flow">
+          <%= render "plan_nodes", plan_data: execution.execution_plan %>
+        </div>
+      <% else %>
+        <div class="analysis-empty">
+          <div class="empty-icon">🔍</div>
+          <div class="empty-message">No execution plan available</div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div> 

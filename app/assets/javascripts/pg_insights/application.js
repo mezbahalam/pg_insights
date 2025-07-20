@@ -23,6 +23,38 @@ document.addEventListener('DOMContentLoaded', function() {
       this.validateInitialQuery();
       this.setupQueryExamples();
       this.loadTableNames();
+      this.initializeAnalysisViews();
+    },
+    
+    // Initialize analysis views if present
+    initializeAnalysisViews() {
+      const planView = document.getElementById('plan-view');
+      const perfView = document.getElementById('perf-view');
+      const planTab = document.querySelector('[data-view="plan"]');
+      
+      if (planView && planTab && planView.style.display !== 'none') {
+        // Plan view is visible, make sure the tab is properly activated
+        this.activateAnalysisTab('plan');
+      }
+    },
+    
+    // Activate analysis tab
+    activateAnalysisTab(viewType) {
+      const allTabs = document.querySelectorAll('.toggle-btn');
+      const targetTab = document.querySelector(`[data-view="${viewType}"]`);
+      
+      if (targetTab) {
+        allTabs.forEach(tab => tab.classList.remove('active'));
+        targetTab.classList.add('active');
+        
+        const allViews = document.querySelectorAll('.view-content');
+        allViews.forEach(view => view.style.display = 'none');
+        
+        const targetView = document.getElementById(`${viewType}-view`);
+        if (targetView) {
+          targetView.style.display = 'block';
+        }
+      }
     },
 
     // Load queries from data attribute

@@ -4,6 +4,10 @@ PgInsights::Engine.routes.draw do
   post "/", to: "insights#index"
   get :table_names, to: "insights#table_names"
 
+  # Query analysis endpoints
+  post :analyze, to: "insights#analyze"
+  get "execution/:id", to: "insights#execution_status", as: :execution_status
+
   resources :queries, only: [ :create, :update, :destroy ]
 
   get :health, to: "health#index"

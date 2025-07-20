@@ -1,0 +1,123 @@
+<div id="perf-view" class="view-content" style="display: none;">
+  <div class="analysis-dashboard">
+    <!-- Performance Status Banner -->
+    <div class="perf-status-banner <%= execution.has_performance_issues? ? 'status-warning' : 'status-success' %>">
+      <div class="status-indicator">
+        <%= execution.has_performance_issues? ? '⚠️' : '✅' %>
+      </div>
+      <div class="status-content">
+        <div class="status-title">
+          <%= execution.has_performance_issues? ? 'Performance Issues Detected' : 'Excellent Performance!' %>
+        </div>
+        <div class="status-description">
+          <%= execution.has_performance_issues? ? 'Query could benefit from optimization' : 'Query executed efficiently with good performance' %>
+        </div>
+      </div>
+      <div class="status-rating">
+        <div class="rating-badge">
+          <%= get_performance_rating(execution.total_time_ms) %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Performance Metrics Dashboard -->
+    <div class="perf-metrics-dashboard">
+      <!-- Timing Breakdown -->
+      <div class="metrics-section">
+        <h4 class="section-title">⏱️ Execution Timing</h4>
+        <div class="timing-breakdown">
+          <div class="timing-item">
+            <div class="timing-label">Planning</div>
+            <div class="timing-bar-container">
+              <div class="timing-bar planning-bar" style="width: <%= timing_percentage(execution.planning_time_ms, execution.total_time_ms) %>%"></div>
+            </div>
+            <div class="timing-value"><%= execution.planning_time_ms ? "#{execution.planning_time_ms.round(1)}ms" : 'N/A' %></div>
+          </div>
+          <div class="timing-item">
+            <div class="timing-label">Execution</div>
+            <div class="timing-bar-container">
+              <div class="timing-bar execution-bar" style="width: <%= timing_percentage(execution.execution_time_ms, execution.total_time_ms) %>%"></div>
+            </div>
+            <div class="timing-value"><%= execution.execution_time_ms ? "#{execution.execution_time_ms.round(1)}ms" : 'N/A' %></div>
+          </div>
+          <div class="timing-total">
+            <div class="timing-label total-label">Total Time</div>
+            <div class="timing-value total-value"><%= execution.total_time_ms ? "#{execution.total_time_ms.round(1)}ms" : 'N/A' %></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Key Performance Indicators -->
+      <div class="metrics-section">
+        <h4 class="section-title">📊 Key Metrics</h4>
+        <div class="kpi-grid">
+          <div class="kpi-card cost-card">
+            <div class="kpi-icon">💰</div>
+            <div class="kpi-content">
+              <div class="kpi-value"><%= execution.query_cost ? execution.query_cost.round(1) : 'N/A' %></div>
+              <div class="kpi-label">Query Cost</div>
+              <div class="kpi-hint">Lower is better</div>
+            </div>
+          </div>
+          <div class="kpi-card rows-card">
+            <div class="kpi-icon">📋</div>
+            <div class="kpi-content">
+              <div class="kpi-value"><%= execution.result_rows_count || 'N/A' %></div>
+              <div class="kpi-label">Rows Returned</div>
+              <div class="kpi-hint"><%= execution.result_columns_count %> columns</div>
+            </div>
+          </div>
+          <div class="kpi-card efficiency-card">
+            <div class="kpi-icon">⚡</div>
+            <div class="kpi-content">
+              <div class="kpi-value"><%= calculate_efficiency_score(execution) %></div>
+              <div class="kpi-label">Efficiency</div>
+              <div class="kpi-hint">Cost per row</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Optimization Analysis -->
+      <div class="metrics-section">
+        <h4 class="section-title">💡 Analysis & Recommendations</h4>
+        <% if execution.performance_insights.present? && execution.performance_insights['suggestions']&.any? %>
+          <div class="recommendations-list">
+            <% execution.performance_insights['suggestions'].each_with_index do |suggestion, index| %>
+              <div class="recommendation-item">
+                <div class="rec-number"><%= index + 1 %></div>
+                <div class="rec-content">
+                  <div class="rec-text"><%= suggestion %></div>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          <div class="optimization-success">
+            <div class="success-visual">
+              <div class="success-checkmark">✓</div>
+              <div class="success-message">
+                <div class="success-primary">Well-optimized query!</div>
+                <div class="success-secondary">No performance bottlenecks detected</div>
+              </div>
+            </div>
+            <div class="performance-highlights">
+              <div class="highlight-item">
+                <span class="highlight-icon">⚡</span>
+                <span>Fast execution time</span>
+              </div>
+              <div class="highlight-item">
+                <span class="highlight-icon">🎯</span>
+                <span>Efficient resource usage</span>
+              </div>
+              <div class="highlight-item">
+                <span class="highlight-icon">🏆</span>
+                <span>Good query planning</span>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div> 

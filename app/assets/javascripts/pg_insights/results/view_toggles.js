@@ -3,7 +3,9 @@ function initViewToggles() {
   const views = {
     table: document.getElementById('table-view'),
     chart: document.getElementById('chart-view'),
-    stats: document.getElementById('stats-view')
+    stats: document.getElementById('stats-view'),
+    plan: document.getElementById('plan-view'),
+    perf: document.getElementById('perf-view')
   };
 
   toggleBtns.forEach(function(btn) {
@@ -20,6 +22,11 @@ function initViewToggles() {
           views[viewName].style.display = viewName === targetView ? 'block' : 'none';
         }
       });
+      
+      // Initialize table manager if switching to table view
+      if (targetView === 'table' && typeof window.tableManager !== 'undefined') {
+        window.tableManager.init();
+      }
     });
   });
 } 

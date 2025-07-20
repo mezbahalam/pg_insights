@@ -1,9 +1,21 @@
-<% if @result.present? %>
+<% if @result.present? || @query_execution&.success? %>
   <div class="results-section">
     <%= render "results_info" %>
-    <%= render "chart_view" %>
-    <%= render "stats_view" %>
-    <%= render "table_view" %>
+    
+    <% if @result.present? %>
+      <%= render "chart_view" %>
+      <%= render "stats_view" %>
+      <%= render "table_view" %>
+    <% end %>
+    
+    <% if @query_execution&.includes_execution? && @query_execution.has_result_data? %>
+      <%= render "execution_table_view", execution: @query_execution %>
+    <% end %>
+    
+    <% if @query_execution&.has_plan_data? %>
+      <%= render "plan_view", execution: @query_execution %>
+      <%= render "perf_view", execution: @query_execution %>
+    <% end %>
   </div>
 <% elsif flash.now[:alert] %>
   <div class="results-section">

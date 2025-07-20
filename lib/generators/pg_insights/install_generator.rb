@@ -16,6 +16,7 @@ module PgInsights
       def copy_migrations
         copy_queries_migration
         copy_health_check_results_migration
+        copy_query_executions_migration
       end
 
       def create_initializer
@@ -53,7 +54,7 @@ module PgInsights
         puts ""
         puts "Features available:"
         puts "• Health Dashboard: '/pg_insights/health' - Monitor database health"
-        puts "• Query Runner: '/pg_insights' - Run SQL queries with charts"
+        puts "• Query Runner: '/pg_insights' - Run SQL queries with charts & EXPLAIN ANALYZE"
         puts "• Timeline: '/pg_insights/timeline' - Track parameter changes over time"
         puts ""
         puts "Useful commands:"
@@ -214,6 +215,16 @@ module PgInsights
           puts "Copying PgInsights health check results migration..."
           migration_template "db/migrate/create_pg_insights_health_check_results.rb",
                              "db/migrate/create_pg_insights_health_check_results.rb"
+        end
+      end
+
+      def copy_query_executions_migration
+        if migration_exists?("create_pg_insights_query_executions")
+          say_status("skipped", "Migration 'create_pg_insights_query_executions' already exists", :yellow)
+        else
+          puts "Copying PgInsights query executions migration..."
+          migration_template "db/migrate/create_pg_insights_query_executions.rb",
+                             "db/migrate/create_pg_insights_query_executions.rb"
         end
       end
 

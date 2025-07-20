@@ -1,0 +1,12 @@
+<div class="plan-tree-modern">
+  <% if plan_data.is_a?(Array) && plan_data.first&.dig("Plan") %>
+    <%= render_plan_node_modern(plan_data.first["Plan"], 0) %>
+  <% elsif plan_data.is_a?(Hash) && plan_data["Plan"] %>
+    <%= render_plan_node_modern(plan_data["Plan"], 0) %>
+  <% else %>
+    <div class="plan-error">
+      <span class="error-icon">⚠️</span>
+      <span>Unable to parse execution plan data</span>
+    </div>
+  <% end %>
+</div> 

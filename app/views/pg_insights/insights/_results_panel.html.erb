@@ -1,5 +1,7 @@
 <div class="results-panel">
-  <% if @result.nil? %>
+  <% if @result.present? || @query_execution&.success? %>
+    <%= render "result" %>
+  <% else %>
     <div class="empty-results">
       <div class="empty-content">
         <div class="empty-icon">📊</div>
@@ -7,7 +9,5 @@
         <p>Enter a SELECT query on the left and click Execute to see results here.</p>
       </div>
     </div>
-  <% else %>
-    <%= render "result" %>
   <% end %>
 </div>

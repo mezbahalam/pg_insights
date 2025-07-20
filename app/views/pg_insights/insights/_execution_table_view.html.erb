@@ -1,0 +1,86 @@
+<div id="table-view" class="view-content">
+  <% if execution.has_result_data? %>
+    <div class="table-controls">
+      <div class="control-group">
+        <button id="fitColumns" class="btn btn-sm">↕ Fit Columns</button>
+        <button id="resetTable" class="btn btn-sm">⚙ Reset</button>
+      </div>
+      
+      <div id="columnPanel" class="column-panel" style="display: none;">
+        <div class="panel-header">
+          <h4>Column Visibility</h4>
+          <div class="panel-actions">
+            <button id="showAllColumns" class="btn btn-xs">Show All</button>
+            <button id="hideAllColumns" class="btn btn-xs">Hide All</button>
+          </div>
+        </div>
+        
+        <div class="column-toggles">
+          <% execution.result_data['columns'].each_with_index do |column, index| %>
+            <label class="column-toggle-label">
+              <input type="checkbox" 
+                     class="column-toggle" 
+                     data-column="<%= index + 1 %>" 
+                     checked>
+              <span class="toggle-text"><%= column %></span>
+            </label>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <div id="tableScroll" class="table-scroll" tabindex="0">
+      <table id="resultsTable" class="results-table">
+        <thead>
+          <tr>
+            <th class="row-num">#</th>
+            <% execution.result_data['columns'].each_with_index do |column, index| %>
+              <th data-column="<%= index + 1 %>">
+                <div class="header-content">
+                  <span class="header-text"><%= column %></span>
+                  <span class="header-type">auto</span>
+                </div>
+              </th>
+            <% end %>
+          </tr>
+        </thead>
+        <tbody>
+          <% execution.result_data['rows'].each_with_index do |row, row_index| %>
+            <tr>
+              <td class="row-num"><%= row_index + 1 %></td>
+              <% row.each_with_index do |cell, col_index| %>
+                <td data-column="<%= col_index + 1 %>">
+                  <div class="cell-content">
+                    <% if cell.nil? %>
+                      <span class="null-value">NULL</span>
+                    <% elsif cell.to_s.empty? %>
+                      <span class="empty-value">empty</span>
+                    <% else %>
+                      <%= cell %>
+                    <% end %>
+                  </div>
+                </td>
+              <% end %>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+    
+    <div id="scrollIndicatorH" class="scroll-indicator horizontal">
+      <div id="scrollThumbH" class="scroll-thumb"></div>
+    </div>
+    
+    <div id="scrollIndicatorV" class="scroll-indicator vertical">
+      <div id="scrollThumbV" class="scroll-thumb"></div>
+    </div>
+  <% else %>
+    <div class="empty-results">
+      <div class="empty-content">
+        <div class="empty-icon">📊</div>
+        <h3>No Result Data</h3>
+        <p>This execution did not return table data.</p>
+      </div>
+    </div>
+  <% end %>
+</div> 

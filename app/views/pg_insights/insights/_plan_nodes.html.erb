@@ -1,0 +1,12 @@
+<div class="plan-nodes-container">
+  <% if plan_data.is_a?(Array) && plan_data.first&.dig("Plan") %>
+    <%= render_plan_node_compact(plan_data.first["Plan"], 0) %>
+  <% elsif plan_data.is_a?(Hash) && plan_data["Plan"] %>
+    <%= render_plan_node_compact(plan_data["Plan"], 0) %>
+  <% else %>
+    <div class="plan-parse-error">
+      <span class="error-indicator">⚠️</span>
+      <span>Unable to parse execution plan</span>
+    </div>
+  <% end %>
+</div> 
