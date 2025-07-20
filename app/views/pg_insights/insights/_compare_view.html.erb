@@ -32,23 +32,72 @@
 
     <!-- Comparison Results -->
     <div id="comparison-results" class="comparison-results" style="display: none;">
-      <!-- Performance Comparison Table -->
+      <!-- Enhanced Performance Dashboard -->
       <div class="performance-comparison">
-        <h4>⚡ Performance Comparison</h4>
-        <div class="metrics-table-wrapper">
-          <table class="metrics-table">
-            <thead>
-              <tr>
-                <th>Metric</th>
-                <th>Query A</th>
-                <th>Query B</th>
-                <th>Difference</th>
-              </tr>
-            </thead>
-            <tbody id="metrics-table-body">
-              <!-- Dynamically populated -->
-            </tbody>
-          </table>
+        <h4>⚡ Performance Metrics</h4>
+        
+        <!-- Quick Stats Overview -->
+        <div class="metrics-overview">
+          <div class="metric-card" id="time-metric">
+            <div class="metric-label">Execution Time</div>
+            <div class="metric-values">
+              <span class="value-a">-</span>
+              <span class="vs-divider">vs</span>
+              <span class="value-b">-</span>
+            </div>
+            <div class="metric-difference"></div>
+          </div>
+          
+          <div class="metric-card" id="cost-metric">
+            <div class="metric-label">Query Cost</div>
+            <div class="metric-values">
+              <span class="value-a">-</span>
+              <span class="vs-divider">vs</span>
+              <span class="value-b">-</span>
+            </div>
+            <div class="metric-difference"></div>
+          </div>
+          
+          <div class="metric-card" id="rows-metric">
+            <div class="metric-label">Rows Processed</div>
+            <div class="metric-values">
+              <span class="value-a">-</span>
+              <span class="vs-divider">vs</span>
+              <span class="value-b">-</span>
+            </div>
+            <div class="metric-difference"></div>
+          </div>
+          
+          <div class="metric-card" id="efficiency-metric">
+            <div class="metric-label">Efficiency Ratio</div>
+            <div class="metric-values">
+              <span class="value-a">-</span>
+              <span class="vs-divider">vs</span>
+              <span class="value-b">-</span>
+            </div>
+            <div class="metric-difference"></div>
+          </div>
+        </div>
+
+        <!-- Detailed Metrics Table -->
+        <div class="detailed-metrics">
+          <h5>Detailed Breakdown</h5>
+          <div class="metrics-table-wrapper">
+            <table class="metrics-table">
+              <thead>
+                <tr>
+                  <th>Metric</th>
+                  <th>Query A</th>
+                  <th>Query B</th>
+                  <th>Difference</th>
+                  <th>Impact</th>
+                </tr>
+              </thead>
+              <tbody id="metrics-table-body">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -60,28 +109,168 @@
         </div>
       </div>
 
-      <!-- Side by Side Plans -->
+      <!-- Enhanced Plan Comparison -->
       <div class="plans-comparison">
-        <h4>🌳 Execution Plans</h4>
-        <div class="plans-grid">
+        <h4>🌳 Execution Plan Analysis</h4>
+        
+        <!-- Plan Overview -->
+        <div class="plan-overview">
+          <div class="plan-stats">
+            <div class="stat-item">
+              <span class="stat-label">Plan Nodes:</span>
+              <span class="stat-values">
+                <span id="nodes-a">-</span> vs <span id="nodes-b">-</span>
+              </span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Max Depth:</span>
+              <span class="stat-values">
+                <span id="depth-a">-</span> vs <span id="depth-b">-</span>
+              </span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Scan Types:</span>
+              <span class="stat-values">
+                <span id="scans-a">-</span> vs <span id="scans-b">-</span>
+              </span>
+            </div>
+          </div>
+          
+          <div class="plan-controls">
+            <button class="plan-toggle active" data-view="side-by-side">Side by Side</button>
+            <button class="plan-toggle" data-view="overlay">Overlay</button>
+            <button class="plan-toggle" data-view="diff">Differences</button>
+          </div>
+        </div>
+
+        <!-- Side by Side Plans -->
+        <div class="plans-grid" id="side-by-side-view">
           <div class="plan-column">
-            <h5>Query A Plan</h5>
+            <div class="plan-header">
+              <h5>Query A Plan</h5>
+              <div class="plan-meta">
+                <span class="plan-efficiency" id="efficiency-a">-</span>
+                <span class="plan-bottleneck" id="bottleneck-a">-</span>
+              </div>
+            </div>
             <div class="plan-content" id="plan-a-content">
               <!-- Plan tree content -->
             </div>
           </div>
           <div class="plan-column">
-            <h5>Query B Plan</h5>
+            <div class="plan-header">
+              <h5>Query B Plan</h5>
+              <div class="plan-meta">
+                <span class="plan-efficiency" id="efficiency-b">-</span>
+                <span class="plan-bottleneck" id="bottleneck-b">-</span>
+              </div>
+            </div>
             <div class="plan-content" id="plan-b-content">
               <!-- Plan tree content -->
             </div>
           </div>
         </div>
+
+        <!-- Plan Overlay View -->
+        <div class="plan-overlay" id="overlay-view" style="display: none;">
+          <div class="overlay-controls">
+            <div class="overlay-legend">
+              <span class="legend-item">
+                <span class="legend-color query-a-color"></span> Query A
+              </span>
+              <span class="legend-item">
+                <span class="legend-color query-b-color"></span> Query B
+              </span>
+              <span class="legend-item">
+                <span class="legend-color common-color"></span> Common
+              </span>
+            </div>
+            <div class="overlay-options">
+              <label>
+                <input type="checkbox" id="highlight-differences" checked> Highlight Differences
+              </label>
+              <label>
+                <input type="checkbox" id="show-metrics" checked> Show Metrics
+              </label>
+            </div>
+          </div>
+          
+          <div class="overlay-content" id="overlay-content">
+            <!-- Populated by JavaScript -->
+          </div>
+        </div>
+
+        <!-- Plan Differences View -->
+        <div class="plan-differences" id="diff-view" style="display: none;">
+          <div class="diff-summary" id="diff-summary">
+            <!-- Populated by JavaScript -->
+          </div>
+          <div class="diff-details" id="diff-details">
+            <!-- Populated by JavaScript -->
+          </div>
+        </div>
       </div>
 
-      <!-- Insights & Recommendations -->
+      <!-- Advanced Optimization Insights -->
       <div class="insights-comparison" id="insights-section">
-        <h4>💡 Key Insights</h4>
+        <h4>💡 Optimization Analysis</h4>
+        
+        <!-- Optimization Score -->
+        <div class="optimization-score">
+          <div class="score-card">
+            <div class="score-header">Query A Optimization</div>
+            <div class="score-value" id="score-a">-</div>
+            <div class="score-grade" id="grade-a">-</div>
+          </div>
+          
+          <div class="score-comparison">
+            <div class="score-arrow" id="score-arrow">↔</div>
+            <div class="score-improvement" id="score-improvement">-</div>
+          </div>
+          
+          <div class="score-card">
+            <div class="score-header">Query B Optimization</div>
+            <div class="score-value" id="score-b">-</div>
+            <div class="score-grade" id="grade-b">-</div>
+          </div>
+        </div>
+
+        <!-- Key Findings -->
+        <div class="findings-section">
+          <h5>Key Findings</h5>
+          <div class="findings-grid">
+            <div class="finding-category">
+              <h6>🚀 Performance Issues</h6>
+              <ul id="performance-issues">
+                <!-- Populated by JavaScript -->
+              </ul>
+            </div>
+            
+            <div class="finding-category">
+              <h6>📊 Index Usage</h6>
+              <ul id="index-findings">
+                <!-- Populated by JavaScript -->
+              </ul>
+            </div>
+            
+            <div class="finding-category">
+              <h6>🔧 Optimization Opportunities</h6>
+              <ul id="optimization-opportunities">
+                <!-- Populated by JavaScript -->
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recommendations -->
+        <div class="recommendations-section">
+          <h5>Recommended Actions</h5>
+          <div class="recommendations-list" id="recommendations-list">
+            <!-- Dynamically populated recommendations -->
+          </div>
+        </div>
+
+        <!-- Traditional Insights -->
         <div class="insights-list" id="insights-list">
           <!-- Dynamically populated insights -->
         </div>
