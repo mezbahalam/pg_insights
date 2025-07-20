@@ -3,7 +3,7 @@
    =========================================== */
 
 /* Ensure analysis view content is visible */
-#plan-view, #perf-view {
+#plan-view, #perf-view, #visual-view {
   width: 100%;
   min-height: 200px;
   background: white;

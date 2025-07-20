@@ -53,6 +53,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const targetView = document.getElementById(`${viewType}-view`);
         if (targetView) {
           targetView.style.display = 'block';
+          
+          // Initialize PEV2 if switching to visual view
+          if (viewType === 'visual' && typeof window.initPEV2 !== 'undefined') {
+            setTimeout(() => {
+              window.initPEV2();
+            }, 100);
+          }
         }
       }
     },

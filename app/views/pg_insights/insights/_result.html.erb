@@ -12,10 +12,11 @@
       <%= render "execution_table_view", execution: @query_execution %>
     <% end %>
     
-    <% if @query_execution&.has_plan_data? %>
-      <%= render "plan_view", execution: @query_execution %>
-      <%= render "perf_view", execution: @query_execution %>
-    <% end %>
+      <% if @query_execution&.has_plan_data? %>
+    <%= render "plan_view", execution: @query_execution %>
+    <%= render "perf_view", execution: @query_execution %>
+    <%= render "visual_view", execution: @query_execution %>
+  <% end %>
   </div>
 <% elsif flash.now[:alert] %>
   <div class="results-section">

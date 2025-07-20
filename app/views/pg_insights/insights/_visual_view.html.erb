@@ -1,0 +1,212 @@
+<div id="visual-view" class="view-content" style="display: none;">
+  <div class="visual-plan-container">
+    <!-- PEV2 Vue App Container with scoped Bootstrap -->
+    <div id="pev2-app" class="pev2-bootstrap-scope">
+      <div class="loading-container">
+        <div class="loading-spinner"></div>
+        <p class="loading-text">Loading execution plan visualization...</p>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // Dynamic dependency loader
+    window.loadPEV2Dependencies = function() {
+      return new Promise((resolve, reject) => {
+        // Check if already loaded
+        if (window.pev2DependenciesLoaded) {
+          resolve();
+          return;
+        }
+        
+        let loadedCount = 0;
+        const totalDependencies = 3; // CSS, Vue, PEV2
+        
+        function checkComplete() {
+          loadedCount++;
+          if (loadedCount === totalDependencies) {
+            window.pev2DependenciesLoaded = true;
+            resolve();
+          }
+        }
+        
+        // Load Bootstrap CSS with scoping
+        const bootstrapCSS = document.createElement('link');
+        bootstrapCSS.rel = 'stylesheet';
+        bootstrapCSS.href = 'https://unpkg.com/bootstrap@5.3.2/dist/css/bootstrap.min.css';
+        bootstrapCSS.onload = () => {
+          // Add PEV2 CSS
+          const pev2CSS = document.createElement('link');
+          pev2CSS.rel = 'stylesheet';
+          pev2CSS.href = 'https://unpkg.com/pev2/dist/pev2.css';
+          pev2CSS.onload = checkComplete;
+          pev2CSS.onerror = reject;
+          document.head.appendChild(pev2CSS);
+        };
+        bootstrapCSS.onerror = reject;
+        document.head.appendChild(bootstrapCSS);
+        
+        // Load Vue.js
+        const vueScript = document.createElement('script');
+        vueScript.src = 'https://unpkg.com/vue@3.2.45/dist/vue.global.prod.js';
+        vueScript.onload = checkComplete;
+        vueScript.onerror = reject;
+        document.head.appendChild(vueScript);
+        
+        // Load PEV2
+        const pev2Script = document.createElement('script');
+        pev2Script.src = 'https://unpkg.com/pev2/dist/pev2.umd.js';
+        pev2Script.onload = checkComplete;
+        pev2Script.onerror = reject;
+        document.head.appendChild(pev2Script);
+      });
+    };
+    
+    // Initialize PEV2 after dependencies are loaded
+    window.initPEV2 = function() {
+      if (window.pev2Initialized) {
+        return; // Already initialized
+      }
+      
+      // Show loading state
+      document.getElementById('pev2-app').innerHTML = `
+        <div class="d-flex align-items-center justify-content-center" style="height: 500px;">
+          <div class="text-center">
+            <div class="spinner-border text-primary mb-3" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="text-muted">Loading dependencies...</p>
+          </div>
+        </div>
+      `;
+      
+      // Load dependencies dynamically
+      window.loadPEV2Dependencies()
+        .then(() => {
+          if (!window.Vue || !window.pev2) {
+            throw new Error('Dependencies failed to load properly');
+          }
+          
+          const { createApp } = Vue;
+          
+          // Get the execution plan data as JavaScript object
+          const executionData = <%= raw(@query_execution.execution_plan.to_json) if @query_execution&.execution_plan.present? %> || null;
+          const queryText = <%= raw(@query_execution.sql_text.to_json) if @query_execution&.sql_text.present? %> || '';
+          
+          // PEV2 expects the plan as a JSON string
+          let planSource = '{}';
+          if (executionData && Array.isArray(executionData) && executionData.length > 0) {
+            planSource = JSON.stringify(executionData[0]);
+          } else if (executionData && typeof executionData === 'object') {
+            planSource = JSON.stringify(executionData);
+          }
+          
+          console.log('PEV2 Plan Source:', planSource);
+          
+          // Create Vue app with scoped container
+          const app = createApp({
+            data() {
+              return {
+                plan: planSource,
+                queryText: queryText
+              }
+            },
+            template: `
+              <div class="d-flex flex-column vh-100">
+                <pev2 :plan-source="plan" :plan-query="queryText" />
+              </div>
+            `
+          });
+          
+          app.component('pev2', pev2.Plan);
+          app.mount('#pev2-app');
+          window.pev2Initialized = true;
+          
+        })
+        .catch(error => {
+          console.error('Error loading PEV2 dependencies:', error);
+          document.getElementById('pev2-app').innerHTML = `
+            <div class="alert alert-danger m-4">
+              <h5>❌ Failed to load execution plan visualization</h5>
+              <p>Could not load the required dependencies (Vue.js, PEV2). This could be due to:</p>
+              <ul>
+                <li>Network connectivity issues</li>
+                <li>CDN service unavailable</li>
+                <li>Browser security settings</li>
+              </ul>
+              <p><strong>Alternative:</strong> Use the <strong>Plan</strong> or <strong>Perf</strong> tabs for execution plan analysis.</p>
+              <details>
+                <summary>Technical Details</summary>
+                <code>${error.message}</code>
+              </details>
+            </div>
+          `;
+        });
+    };
+  </script>
+  
+  <!-- Scoped CSS to prevent Bootstrap conflicts -->
+  <style>
+    /* Scope Bootstrap styles to only affect PEV2 container */
+    .pev2-bootstrap-scope {
+      /* Isolate Bootstrap styles */
+      all: initial;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    }
+    
+    .pev2-bootstrap-scope * {
+      box-sizing: border-box;
+    }
+    
+    /* Custom loading styles */
+    .loading-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 500px;
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+      margin: 16px;
+    }
+    
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #e9ecef;
+      border-left: 4px solid #007bff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 16px;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .loading-text {
+      color: #6c757d;
+      font-size: 14px;
+      margin: 0;
+    }
+    
+    /* Ensure visual view takes full height */
+    #visual-view {
+      padding: 0;
+    }
+    
+    .visual-plan-container {
+      width: 100%;
+      height: 100%;
+      min-height: 500px;
+    }
+    
+    #pev2-app {
+      width: 100%;
+      height: 100%;
+      background: white;
+    }
+  </style>
+</div> 

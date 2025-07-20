@@ -5,7 +5,8 @@ function initViewToggles() {
     chart: document.getElementById('chart-view'),
     stats: document.getElementById('stats-view'),
     plan: document.getElementById('plan-view'),
-    perf: document.getElementById('perf-view')
+    perf: document.getElementById('perf-view'),
+    visual: document.getElementById('visual-view')
   };
 
   toggleBtns.forEach(function(btn) {
@@ -26,6 +27,14 @@ function initViewToggles() {
       // Initialize table manager if switching to table view
       if (targetView === 'table' && typeof window.tableManager !== 'undefined') {
         window.tableManager.init();
+      }
+      
+      // Initialize PEV2 if switching to visual view
+      if (targetView === 'visual' && typeof window.initPEV2 !== 'undefined') {
+        // Small delay to ensure the view is visible before initializing Vue
+        setTimeout(function() {
+          window.initPEV2();
+        }, 100);
       }
     });
   });
