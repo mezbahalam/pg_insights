@@ -99,36 +99,17 @@ module PgInsights
             config.background_job_queue = :pg_insights_health
 
             # === Cache and Timeout Settings ===
-            # How long to cache health check results before considering them stale
-            # Stale results will trigger background refresh when accessed
-            #
-            # Default: 5.minutes
             config.health_cache_expiry = 5.minutes
 
             # === Query Execution Timeouts ===
-            # Granular timeout control for different types of queries
-          #{'  '}
-            # Timeout for regular "Execute" button queries
-            # Default: 30.seconds
             config.query_execution_timeout = 30.seconds
-          #{'  '}
-            # Timeout for "Analyze" button queries (EXPLAIN ANALYZE)
-            # These queries can take longer as they include execution plan analysis
-            # Default: 60.seconds
             config.query_analysis_timeout = 60.seconds
-          #{'  '}
-            # Timeout for health check queries to prevent long-running queries
-            # from blocking the application
-            # Default: 20.seconds
             config.health_check_timeout = 20.seconds
 
             # === Heavy Analytics Environment ===
-            # Uncomment and adjust these settings for extremely heavy analytics workloads
-            # that require even longer execution times for complex queries and reports
-            #
-            # config.query_execution_timeout = 120.seconds   # Very long-running reports
-            # config.query_analysis_timeout = 180.seconds    # Deep query analysis
-            # config.health_check_timeout = 60.seconds       # Extended health checks
+            # config.query_execution_timeout = 120.seconds
+            # config.query_analysis_timeout = 180.seconds
+            # config.health_check_timeout = 60.seconds
 
             # === Timeline & Snapshot Settings ===
             #
