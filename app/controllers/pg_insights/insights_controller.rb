@@ -6,7 +6,6 @@ module PgInsights
     protect_from_forgery with: :exception
 
     MAX_ROWS = 1_000
-    TIMEOUT = 5_000
 
     # GET /pg_insights
     # POST /pg_insights
@@ -184,7 +183,7 @@ module PgInsights
 
       begin
         ActiveRecord::Base.connection.transaction do
-          ActiveRecord::Base.connection.execute("SET LOCAL statement_timeout = #{TIMEOUT}")
+          ActiveRecord::Base.connection.execute("SET LOCAL statement_timeout = #{PgInsights.query_execution_timeout_ms}")
           @result = ActiveRecord::Base.connection.exec_query(sql)
         end
         @execution_type = "execute"

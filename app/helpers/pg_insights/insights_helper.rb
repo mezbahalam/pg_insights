@@ -111,7 +111,23 @@ module PgInsights
       end
     end
 
+    def query_info_text
+      execute_timeout = format_timeout(PgInsights.query_execution_timeout)
+      analyze_timeout = format_timeout(PgInsights.query_analysis_timeout)
+
+      "SELECT only • #{execute_timeout} exec • #{analyze_timeout} analyze • 1k row limit"
+    end
+
     private
+
+    def format_timeout(timeout)
+      seconds = timeout.to_f
+      if seconds >= 1
+        "#{seconds.to_i}s"
+      else
+        "#{(seconds * 1000).to_i}ms"
+      end
+    end
 
     def prepare_chart_data(result)
       return { labels: [], chartData: [] } unless result&.rows&.any?

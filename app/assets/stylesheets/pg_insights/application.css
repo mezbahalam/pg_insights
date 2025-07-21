@@ -383,6 +383,7 @@
   width: 100%;
   height: 100%;
   min-height: 200px;
+  max-height: 400px; /* Prevent textarea from growing too large */
   padding: 12px;
   border: 2px solid #e5e7eb;
   border-radius: 6px;
@@ -392,6 +393,7 @@
   background: #fafbfc;
   color: #1f2937;
   resize: none;
+  overflow-y: auto; /* Enable scrolling within textarea when content exceeds max-height */
   transition: border-color 0.2s ease;
 
   &:focus {
@@ -404,6 +406,25 @@
   &::placeholder {
     color: #9ca3af;
     opacity: 0.8;
+  }
+
+  /* Custom scrollbar styling for desktop */
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+    
+    &:hover {
+      background: #94a3b8;
+    }
   }
 }
 
@@ -724,6 +745,7 @@
 
   .sql-editor {
     font-size: 14px; /* Prevent zoom on iOS */
+    max-height: 280px; /* Smaller max height on mobile */
   }
 
   .form-actions {
@@ -746,5 +768,9 @@
 
   .results-panel {
     height: 30%;
+  }
+
+  .sql-editor {
+    max-height: 220px; /* Even smaller on very small screens */
   }
 }

@@ -48,7 +48,7 @@ module PgInsights
     private
 
     def execute_query(sql, options)
-      result = execute_with_timeout(sql, QueryAnalysisService::EXECUTION_TIMEOUT)
+      result = execute_with_timeout(sql, PgInsights.query_execution_timeout_ms)
 
       {
         result_data: serialize_result_data(result),
@@ -60,7 +60,7 @@ module PgInsights
 
     def analyze_query(sql, options)
       explain_sql = build_explain_query(sql, options)
-      result = execute_with_timeout(explain_sql, QueryAnalysisService::ANALYZE_TIMEOUT)
+      result = execute_with_timeout(explain_sql, PgInsights.query_analysis_timeout_ms)
 
       plan_data = parse_explain_output(result)
       insights = generate_performance_insights(plan_data)

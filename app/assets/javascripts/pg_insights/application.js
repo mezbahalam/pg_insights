@@ -304,9 +304,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // Validate the query
         this.validateAndUpdateUI(sql);
         
-        // Auto-resize textarea
-        textarea.style.height = 'auto';
-        textarea.style.height = Math.max(160, textarea.scrollHeight) + 'px';
+        // Smart auto-resize with constraints
+        this.resizeTextarea(textarea);
         
         // Auto-execute the query
         const executeBtn = document.getElementById('execute-btn');
@@ -319,6 +318,46 @@ document.addEventListener('DOMContentLoaded', function() {
       const select = document.getElementById('table-preview-select');
       if (select) {
         select.value = '';
+      }
+    },
+
+    // Smart textarea resize with container constraints
+    resizeTextarea(textarea) {
+      if (!textarea) return;
+
+      // Get the form content container to respect its constraints
+      const formContent = textarea.closest('.form-content');
+      if (!formContent) {
+        // Fallback to simple resize if container not found
+        textarea.style.height = 'auto';
+        textarea.style.height = Math.max(160, Math.min(400, textarea.scrollHeight)) + 'px';
+        return;
+      }
+
+      // Calculate available space in the container
+      const formContentStyle = window.getComputedStyle(formContent);
+      const formContentHeight = parseInt(formContentStyle.height);
+      const formContentPadding = parseInt(formContentStyle.paddingTop) + parseInt(formContentStyle.paddingBottom);
+      const availableHeight = formContentHeight - formContentPadding;
+
+      // Set minimum and maximum heights based on container and design constraints
+      const minHeight = 160;
+      const maxHeight = Math.min(400, Math.max(minHeight, availableHeight - 20)); // 20px buffer
+
+      // Reset height to auto to get accurate scrollHeight
+      textarea.style.height = 'auto';
+      
+      // Calculate ideal height based on content
+      const idealHeight = Math.max(minHeight, Math.min(maxHeight, textarea.scrollHeight));
+      
+      // Apply the calculated height
+      textarea.style.height = idealHeight + 'px';
+
+      // If content exceeds max height, ensure scrolling is available
+      if (textarea.scrollHeight > maxHeight) {
+        textarea.style.overflowY = 'auto';
+      } else {
+        textarea.style.overflowY = 'hidden';
       }
     },
 
@@ -405,9 +444,8 @@ document.addEventListener('DOMContentLoaded', function() {
       // Real-time validation on input
       if (textarea) {
         textarea.addEventListener('input', () => {
-          // Auto-resize
-          textarea.style.height = 'auto';
-          textarea.style.height = Math.max(160, textarea.scrollHeight) + 'px';
+          // Smart auto-resize with constraints
+          this.resizeTextarea(textarea);
 
           // Instant validation
           this.validateAndUpdateUI(textarea.value);
@@ -418,6 +456,7 @@ document.addEventListener('DOMContentLoaded', function() {
           // Small delay to let paste complete
           setTimeout(() => {
             this.validateAndUpdateUI(textarea.value);
+            this.resizeTextarea(textarea);
           }, 10);
         });
       }

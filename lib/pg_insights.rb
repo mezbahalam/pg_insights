@@ -5,8 +5,11 @@ module PgInsights
   mattr_accessor :enable_background_jobs, default: true
   mattr_accessor :health_cache_expiry, default: 5.minutes
   mattr_accessor :background_job_queue, default: :pg_insights_health
-  mattr_accessor :max_query_execution_time, default: 30.seconds
-  mattr_accessor :health_check_timeout, default: 10.seconds
+
+  # Query execution timeout settings (granular control)
+  mattr_accessor :query_execution_timeout, default: 30.seconds     # Regular "Execute" button queries
+  mattr_accessor :query_analysis_timeout, default: 60.seconds      # "Analyze" button queries (EXPLAIN ANALYZE)
+  mattr_accessor :health_check_timeout, default: 20.seconds        # Health check queries
 
   mattr_accessor :enable_snapshots, default: true
   mattr_accessor :snapshot_frequency, default: 1.day
@@ -15,6 +18,19 @@ module PgInsights
 
   def self.configure
     yield self
+  end
+
+  # Helper methods to get timeout values in milliseconds for PostgreSQL
+  def self.query_execution_timeout_ms
+    (query_execution_timeout.to_f * 1000).to_i
+  end
+
+  def self.query_analysis_timeout_ms
+    (query_analysis_timeout.to_f * 1000).to_i
+  end
+
+  def self.health_check_timeout_ms
+    (health_check_timeout.to_f * 1000).to_i
   end
 
   def self.background_jobs_available?
