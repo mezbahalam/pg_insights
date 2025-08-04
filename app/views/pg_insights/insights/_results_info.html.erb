@@ -1,19 +1,43 @@
 <div class="results-info">
   <div class="results-meta">
-    <%= "#{@result.rows.size} records • #{@result.columns.size} columns" if @result %>
+    <% if @result.present? %>
+      <%= "#{@result.rows.size} records • #{@result.columns.size} columns" %>
+    <% elsif @query_execution&.success? && @query_execution.has_result_data? %>
+      <%= @query_execution.result_summary %>
+    <% elsif @query_execution&.success? && @query_execution.has_plan_data? %>
+      Analysis completed • <%= @query_execution.formatted_total_time %>
+    <% end %>
   </div>
 
   <div class="view-toggle">
-    <button type="button" class="toggle-btn active" data-view="table">
-      <span class="toggle-icon">📊</span> Table
-    </button>
-    <% if should_show_chart?(@result) %>
-      <button type="button" class="toggle-btn" data-view="chart">
-        <span class="toggle-icon">📈</span> Chart
+    <% if @result.present? || (@query_execution&.includes_execution? && @query_execution.has_result_data?) %>
+      <button type="button" class="toggle-btn<%= ' active' if @result.present? || (@query_execution&.includes_execution? && !@query_execution.has_plan_data?) %>" data-view="table">
+        <span class="toggle-icon">📊</span> Table
+      </button>
+      <% if @result && should_show_chart?(@result) %>
+        <button type="button" class="toggle-btn" data-view="chart">
+          <span class="toggle-icon">📈</span> Chart
+        </button>
+      <% end %>
+      <button type="button" class="toggle-btn" data-view="stats">
+        <span class="toggle-icon">📋</span> Stats
       </button>
     <% end %>
-    <button type="button" class="toggle-btn" data-view="stats">
-      <span class="toggle-icon">📋</span> Stats
+    
+    <% if @query_execution&.has_plan_data? %>
+      <button type="button" class="toggle-btn<%= ' active' if @execution_type == 'analyze' && !(@result.present?) %>" data-view="plan">
+        <span class="toggle-icon">🔍</span> Plan
+      </button>
+      <button type="button" class="toggle-btn" data-view="perf">
+        <span class="toggle-icon">⏱️</span> Perf
+      </button>
+      <button type="button" class="toggle-btn" data-view="visual">
+        <span class="toggle-icon">🌳</span> Visual
+      </button>
+    <% end %>
+    
+    <button type="button" id="compare-tab" class="toggle-btn disabled" data-view="compare" title="Select 2 queries from history to compare">
+      <span class="toggle-icon">⚖️</span> Compare
     </button>
   </div>
 </div>

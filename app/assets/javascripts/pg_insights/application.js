@@ -1,5 +1,4 @@
 
-
 // PG Insights JavaScript
 document.addEventListener('DOMContentLoaded', function() {
   const InsightsApp = {
@@ -23,6 +22,45 @@ document.addEventListener('DOMContentLoaded', function() {
       this.validateInitialQuery();
       this.setupQueryExamples();
       this.loadTableNames();
+      this.initializeAnalysisViews();
+    },
+    
+    // Initialize analysis views if present
+    initializeAnalysisViews() {
+      const planView = document.getElementById('plan-view');
+      const perfView = document.getElementById('perf-view');
+      const planTab = document.querySelector('[data-view="plan"]');
+      
+      if (planView && planTab && planView.style.display !== 'none') {
+        // Plan view is visible, make sure the tab is properly activated
+        this.activateAnalysisTab('plan');
+      }
+    },
+    
+    // Activate analysis tab
+    activateAnalysisTab(viewType) {
+      const allTabs = document.querySelectorAll('.toggle-btn');
+      const targetTab = document.querySelector(`[data-view="${viewType}"]`);
+      
+      if (targetTab) {
+        allTabs.forEach(tab => tab.classList.remove('active'));
+        targetTab.classList.add('active');
+        
+        const allViews = document.querySelectorAll('.view-content');
+        allViews.forEach(view => view.style.display = 'none');
+        
+        const targetView = document.getElementById(`${viewType}-view`);
+        if (targetView) {
+          targetView.style.display = 'block';
+          
+          // Initialize PEV2 if switching to visual view
+          if (viewType === 'visual' && typeof window.initPEV2 !== 'undefined') {
+            setTimeout(() => {
+              window.initPEV2();
+            }, 100);
+          }
+        }
+      }
     },
 
     // Load queries from data attribute
@@ -43,7 +81,7 @@ document.addEventListener('DOMContentLoaded', function() {
       // Keep this for backward compatibility if needed elsewhere
     },
 
-    // Copy current query functionality
+    
     copyCurrentQuery() {
       const textarea = document.querySelector('.sql-editor');
       const btn = document.querySelector('.btn-icon.btn-copy');
@@ -61,7 +99,7 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     },
 
-    // Save or Update the current query
+
     saveCurrentQuery() {
       const textarea = document.querySelector('.sql-editor');
       const sql = textarea?.value.trim();
@@ -76,7 +114,7 @@ document.addEventListener('DOMContentLoaded', function() {
         name = prompt("Enter a name for this new saved query:");
       }
 
-      if (!name) return; // User cancelled prompt
+      if (!name) return;
 
       const method = isUpdate ? 'PATCH' : 'POST';
       const url = isUpdate ? `/pg_insights/queries/${this.currentQueryState.id}` : '/pg_insights/queries';
@@ -130,7 +168,7 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     },
 
-    // Query validation
+
     validateQuery(sql) {
       if (!sql || !sql.trim()) {
         return { valid: false, message: "Please enter a SQL query" };
@@ -206,7 +244,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     },
 
-    // Query management
+
     clearQuery() {
       const textarea = document.querySelector('.sql-editor');
       if (textarea) {
@@ -252,7 +290,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     },
 
-    // Preview selected table
+
     previewTable(tableName) {
       if (!tableName) return;
       
@@ -262,12 +300,8 @@ document.addEventListener('DOMContentLoaded', function() {
       if (textarea) {
         textarea.value = sql;
         
-        // Validate the query
         this.validateAndUpdateUI(sql);
-        
-        // Auto-resize textarea
-        textarea.style.height = 'auto';
-        textarea.style.height = Math.max(160, textarea.scrollHeight) + 'px';
+        this.resizeTextarea(textarea);
         
         // Auto-execute the query
         const executeBtn = document.getElementById('execute-btn');
@@ -280,6 +314,35 @@ document.addEventListener('DOMContentLoaded', function() {
       const select = document.getElementById('table-preview-select');
       if (select) {
         select.value = '';
+      }
+    },
+
+    resizeTextarea(textarea) {
+      if (!textarea) return;
+
+      const formContent = textarea.closest('.form-content');
+      if (!formContent) {
+        textarea.style.height = 'auto';
+        textarea.style.height = Math.max(160, Math.min(400, textarea.scrollHeight)) + 'px';
+        return;
+      }
+
+      const formContentStyle = window.getComputedStyle(formContent);
+      const formContentHeight = parseInt(formContentStyle.height);
+      const formContentPadding = parseInt(formContentStyle.paddingTop) + parseInt(formContentStyle.paddingBottom);
+      const availableHeight = formContentHeight - formContentPadding;
+
+      const minHeight = 160;
+      const maxHeight = Math.min(400, Math.max(minHeight, availableHeight - 20));
+
+      textarea.style.height = 'auto';
+      const idealHeight = Math.max(minHeight, Math.min(maxHeight, textarea.scrollHeight));
+      textarea.style.height = idealHeight + 'px';
+
+      if (textarea.scrollHeight > maxHeight) {
+        textarea.style.overflowY = 'auto';
+      } else {
+        textarea.style.overflowY = 'hidden';
       }
     },
 
@@ -358,7 +421,7 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     },
 
-    // Event binding
+
     bindEvents() {
       const textarea = document.querySelector('.sql-editor');
       const executeBtn = document.getElementById('execute-btn');
@@ -366,24 +429,20 @@ document.addEventListener('DOMContentLoaded', function() {
       // Real-time validation on input
       if (textarea) {
         textarea.addEventListener('input', () => {
-          // Auto-resize
-          textarea.style.height = 'auto';
-          textarea.style.height = Math.max(160, textarea.scrollHeight) + 'px';
-
-          // Instant validation
+          this.resizeTextarea(textarea);
           this.validateAndUpdateUI(textarea.value);
         });
 
-        // Validation on paste
+
         textarea.addEventListener('paste', () => {
-          // Small delay to let paste complete
           setTimeout(() => {
             this.validateAndUpdateUI(textarea.value);
+            this.resizeTextarea(textarea);
           }, 10);
         });
       }
 
-      // Prevent form submission if button is disabled
+
       if (executeBtn) {
         executeBtn.addEventListener('click', (event) => {
           if (executeBtn.disabled) {
@@ -400,6 +459,17 @@ document.addEventListener('DOMContentLoaded', function() {
       window.clearQuery = () => this.clearQuery();
       window.copyCurrentQuery = () => this.copyCurrentQuery();
       window.saveCurrentQuery = () => this.saveCurrentQuery();
+      
+      // Listen for form submissions and trigger history refresh
+      const form = document.querySelector('.insights-container form');
+      if (form) {
+        form.addEventListener('submit', () => {
+          // Delay to allow the analysis to complete
+          setTimeout(() => {
+            document.dispatchEvent(new CustomEvent('analysisCompleted'));
+          }, 2000);
+        });
+      }
 
       // Table preview dropdown
       const tableSelect = document.getElementById('table-preview-select');

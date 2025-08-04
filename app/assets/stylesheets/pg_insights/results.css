@@ -50,9 +50,20 @@
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
-.toggle-btn:hover:not(.active) {
+.toggle-btn:hover:not(.active):not(.disabled) {
   background: rgba(255,255,255,0.5);
   color: #475569;
+}
+
+.toggle-btn.disabled {
+  opacity: 0.6;
+  cursor: help;
+  pointer-events: auto;
+}
+
+.toggle-btn.disabled:hover {
+  background: transparent;
+  color: #64748b;
 }
 
 .toggle-icon {

@@ -5,8 +5,10 @@ module PgInsights
   mattr_accessor :enable_background_jobs, default: true
   mattr_accessor :health_cache_expiry, default: 5.minutes
   mattr_accessor :background_job_queue, default: :pg_insights_health
-  mattr_accessor :max_query_execution_time, default: 30.seconds
-  mattr_accessor :health_check_timeout, default: 10.seconds
+
+  mattr_accessor :query_execution_timeout, default: 30.seconds
+  mattr_accessor :query_analysis_timeout, default: 60.seconds
+  mattr_accessor :health_check_timeout, default: 20.seconds
 
   mattr_accessor :enable_snapshots, default: true
   mattr_accessor :snapshot_frequency, default: 1.day
@@ -15,6 +17,32 @@ module PgInsights
 
   def self.configure
     yield self
+  end
+
+  def self.query_execution_timeout_ms
+    validate_timeout(query_execution_timeout, "query_execution_timeout")
+    (query_execution_timeout.to_f * 1000).to_i
+  end
+
+  def self.query_analysis_timeout_ms
+    validate_timeout(query_analysis_timeout, "query_analysis_timeout")
+    (query_analysis_timeout.to_f * 1000).to_i
+  end
+
+  def self.health_check_timeout_ms
+    validate_timeout(health_check_timeout, "health_check_timeout")
+    (health_check_timeout.to_f * 1000).to_i
+  end
+
+  private
+
+  def self.validate_timeout(timeout, setting_name)
+    unless timeout.respond_to?(:to_f) && timeout.to_f > 0
+      raise ArgumentError, "#{setting_name} must be a positive number (seconds). Got: #{timeout.inspect}"
+    end
+    if timeout.to_f > 300
+      Rails.logger.warn "PgInsights: #{setting_name} is set to #{timeout.to_f}s, which is very high. Consider optimizing queries instead."
+    end
   end
 
   def self.background_jobs_available?

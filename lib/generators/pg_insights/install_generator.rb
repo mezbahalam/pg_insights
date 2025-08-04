@@ -16,6 +16,7 @@ module PgInsights
       def copy_migrations
         copy_queries_migration
         copy_health_check_results_migration
+        copy_query_executions_migration
       end
 
       def create_initializer
@@ -53,7 +54,7 @@ module PgInsights
         puts ""
         puts "Features available:"
         puts "• Health Dashboard: '/pg_insights/health' - Monitor database health"
-        puts "• Query Runner: '/pg_insights' - Run SQL queries with charts"
+        puts "• Query Runner: '/pg_insights' - Run SQL queries with charts & EXPLAIN ANALYZE"
         puts "• Timeline: '/pg_insights/timeline' - Track parameter changes over time"
         puts ""
         puts "Useful commands:"
@@ -98,22 +99,17 @@ module PgInsights
             config.background_job_queue = :pg_insights_health
 
             # === Cache and Timeout Settings ===
-            # How long to cache health check results before considering them stale
-            # Stale results will trigger background refresh when accessed
-            #
-            # Default: 5.minutes
             config.health_cache_expiry = 5.minutes
 
-            # Timeout for individual health check queries to prevent long-running queries
-            # from blocking the application
-            #
-            # Default: 10.seconds
-            config.health_check_timeout = 10.seconds
+            # === Query Execution Timeouts ===
+            config.query_execution_timeout = 30.seconds
+            config.query_analysis_timeout = 60.seconds
+            config.health_check_timeout = 20.seconds
 
-            # Maximum execution time for user queries in the insights interface
-            #
-            # Default: 30.seconds
-            config.max_query_execution_time = 30.seconds
+            # === Heavy Analytics Environment ===
+            # config.query_execution_timeout = 120.seconds
+            # config.query_analysis_timeout = 180.seconds
+            # config.health_check_timeout = 60.seconds
 
             # === Timeline & Snapshot Settings ===
             #
@@ -214,6 +210,16 @@ module PgInsights
           puts "Copying PgInsights health check results migration..."
           migration_template "db/migrate/create_pg_insights_health_check_results.rb",
                              "db/migrate/create_pg_insights_health_check_results.rb"
+        end
+      end
+
+      def copy_query_executions_migration
+        if migration_exists?("create_pg_insights_query_executions")
+          say_status("skipped", "Migration 'create_pg_insights_query_executions' already exists", :yellow)
+        else
+          puts "Copying PgInsights query executions migration..."
+          migration_template "db/migrate/create_pg_insights_query_executions.rb",
+                             "db/migrate/create_pg_insights_query_executions.rb"
         end
       end
 

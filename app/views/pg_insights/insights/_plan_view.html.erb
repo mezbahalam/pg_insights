@@ -1,0 +1,159 @@
+<div id="plan-view" class="view-content"<%= ' style="display: none;"'.html_safe unless @execution_type == 'analyze' && !@result.present? %>>
+  <div class="analysis-dashboard">
+    <!-- Enhanced Plan Header with Rich Metrics -->
+    <div class="analysis-header">
+      <div class="metric-chips">
+        <div class="chip primary">
+          <span class="chip-label">Cost</span>
+          <span class="chip-value"><%= execution.query_cost&.round(1) || 'N/A' %></span>
+        </div>
+        <div class="chip success">
+          <span class="chip-label">Time</span>
+          <span class="chip-value"><%= execution.execution_time_ms ? "#{execution.execution_time_ms.round(1)}ms" : 'N/A' %></span>
+        </div>
+        <div class="chip info">
+          <span class="chip-label">Planning</span>
+          <span class="chip-value"><%= execution.planning_time_ms ? "#{execution.planning_time_ms.round(1)}ms" : 'N/A' %></span>
+        </div>
+        <% if execution.execution_plan.present? %>
+          <% plan_metrics = extract_rich_plan_metrics(execution) %>
+          <% if plan_metrics[:rows_returned] %>
+            <div class="chip secondary">
+              <span class="chip-label">Rows</span>
+              <span class="chip-value"><%= plan_metrics[:rows_returned] %></span>
+            </div>
+          <% end %>
+          <% if plan_metrics[:workers_launched] && plan_metrics[:workers_launched] > 0 %>
+            <div class="chip accent">
+              <span class="chip-label">Workers</span>
+              <span class="chip-value"><%= plan_metrics[:workers_launched] %></span>
+            </div>
+          <% end %>
+          <% if plan_metrics[:memory_usage_kb] && plan_metrics[:memory_usage_kb] > 0 %>
+            <div class="chip warning">
+              <span class="chip-label">Memory</span>
+              <span class="chip-value"><%= "#{plan_metrics[:memory_usage_kb]}KB" %></span>
+            </div>
+          <% end %>
+        <% end %>
+      </div>
+      <div class="execution-summary">
+        <span class="summary-text"><%= execution.plan_summary %></span>
+      </div>
+    </div>
+
+    <% if execution.execution_plan.present? %>
+      <!-- Rich Plan Analysis -->
+      <div class="plan-analysis-section">
+        <h4 class="section-title">Plan Analysis</h4>
+        <div class="plan-stats-grid" data-execution-id="<%= execution.id %>">
+          <% plan_metrics = extract_rich_plan_metrics(execution) %>
+          <div class="stat-card">
+            <div class="stat-content">
+              <div class="stat-value" id="plan-nodes-count"><%= plan_metrics[:node_count] || 'N/A' %></div>
+              <div class="stat-label">Plan Nodes</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-content">
+              <div class="stat-value" id="plan-scan-types"><%= plan_metrics[:scan_types]&.any? ? plan_metrics[:scan_types].join(', ') : 'N/A' %></div>
+              <div class="stat-label">Scan Types</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-content">
+              <div class="stat-value" id="plan-indexes-used"><%= plan_metrics[:index_usage]&.any? ? "#{plan_metrics[:index_usage].length} indexes" : 'None' %></div>
+              <div class="stat-label">Indexes Used</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-content">
+              <div class="stat-value" id="plan-efficiency" class="<%= score_css_class(calculate_plan_efficiency_score(plan_metrics)) %>"><%= calculate_plan_efficiency_score(plan_metrics) %></div>
+              <div class="stat-label">Efficiency</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detailed Plan Breakdown -->
+      <div class="plan-breakdown-section">
+        <h4 class="section-title">Execution Details</h4>
+        <div class="plan-details-table" id="plan-details-table">
+          <div class="details-grid">
+            <div class="detail-item">
+              <span class="detail-label">Total Time</span>
+              <span class="detail-value"><%= execution.total_time_ms ? "#{execution.total_time_ms.round(1)}ms" : 'N/A' %></span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Planning Time</span>
+              <span class="detail-value"><%= execution.planning_time_ms ? "#{execution.planning_time_ms.round(1)}ms" : 'N/A' %></span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Execution Time</span>
+              <span class="detail-value"><%= execution.execution_time_ms ? "#{execution.execution_time_ms.round(1)}ms" : 'N/A' %></span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Rows Returned</span>
+              <span class="detail-value"><%= plan_metrics[:rows_returned] || 'N/A' %></span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Rows Scanned</span>
+              <span class="detail-value"><%= plan_metrics[:rows_scanned] ? number_with_delimiter(plan_metrics[:rows_scanned]) : 'N/A' %></span>
+            </div>
+            <% if plan_metrics[:memory_usage_kb] && plan_metrics[:memory_usage_kb] > 0 %>
+              <div class="detail-item">
+                <span class="detail-label">Peak Memory</span>
+                <span class="detail-value"><%= "#{plan_metrics[:memory_usage_kb]} KB" %></span>
+              </div>
+            <% end %>
+            <% if plan_metrics[:workers_launched] && plan_metrics[:workers_launched] > 0 %>
+              <div class="detail-item">
+                <span class="detail-label">Workers</span>
+                <span class="detail-value"><%= "#{plan_metrics[:workers_launched]}/#{plan_metrics[:workers_planned]}" %></span>
+              </div>
+            <% end %>
+            <% if plan_metrics[:sort_methods]&.any? %>
+              <div class="detail-item">
+                <span class="detail-label">Sort Methods</span>
+                <span class="detail-value"><%= plan_metrics[:sort_methods].join(', ') %></span>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Performance Issues & Recommendations -->
+      <div class="plan-insights-section">
+        <h4 class="section-title">Insights & Recommendations</h4>
+        <div class="plan-insights-grid">
+          <div class="insights-column">
+            <h5>🚨 Performance Issues</h5>
+            <ul id="plan-performance-issues" class="insight-list">
+              <%= render_plan_performance_issues(plan_metrics, execution) %>
+            </ul>
+          </div>
+          <div class="insights-column">
+            <h5>🔧 Optimization Opportunities</h5>
+            <ul id="plan-optimizations" class="insight-list">
+              <%= render_plan_optimizations(plan_metrics, execution) %>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Visual Execution Plan -->
+      <div class="plan-visualization">
+        <h4 class="section-title">Visual Plan Tree</h4>
+        <div class="plan-flow">
+          <%= render "plan_nodes", plan_data: execution.execution_plan %>
+        </div>
+      </div>
+    <% else %>
+      <div class="analysis-empty">
+        <div class="empty-icon">🔍</div>
+        <div class="empty-message">No execution plan available</div>
+        <div class="empty-hint">Use "Analyze" button to generate execution plan</div>
+      </div>
+    <% end %>
+  </div>
+</div> 

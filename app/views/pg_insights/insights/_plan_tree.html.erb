@@ -1,0 +1,30 @@
+<div class="execution-plan-tree">
+  <% if plan_data.present? && plan_data.first %>
+    <% plan = plan_data.first['Plan'] %>
+    <% if plan %>
+      <div class="plan-node-tree">
+        <%= render_plan_node(plan, 0) %>
+      </div>
+    <% end %>
+    
+    <% if plan_data.first['Planning Time'] || plan_data.first['Execution Time'] %>
+      <div class="plan-timing">
+        <% if plan_data.first['Planning Time'] %>
+          <div class="timing-detail">Planning Time: <%= plan_data.first['Planning Time'] %> ms</div>
+        <% end %>
+        <% if plan_data.first['Execution Time'] %>
+          <div class="timing-detail">Execution Time: <%= plan_data.first['Execution Time'] %> ms</div>
+        <% end %>
+      </div>
+    <% end %>
+  <% else %>
+    <div class="plan-error">
+      <p>Unable to parse execution plan data</p>
+      <% if plan_data.is_a?(Hash) && plan_data['error'] %>
+        <div class="error-detail"><%= plan_data['error'] %></div>
+      <% end %>
+    </div>
+  <% end %>
+</div>
+
+ 

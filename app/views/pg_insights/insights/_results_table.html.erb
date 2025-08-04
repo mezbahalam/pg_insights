@@ -1,7 +1,6 @@
 <div class="table-wrapper">
   <div id="tableScroll" class="table-scroll" tabindex="0">
     <table id="resultsTable" class="results-table">
-      <!-- Sticky Header -->
       <thead class="sticky-header">
         <tr>
           <th class="row-num">#</th>
@@ -15,8 +14,6 @@
           <% end %>
         </tr>
       </thead>
-
-      <!-- Table Body -->
       <tbody>
         <% @result.rows.each_with_index do |row, row_index| %>
           <tr class="<%= 'even-row' if row_index.even? %>">
@@ -33,8 +30,6 @@
       </tbody>
     </table>
   </div>
-
-  <!-- Scroll Indicators -->
   <div id="scrollIndicatorH" class="scroll-indicator scroll-indicator-horizontal">
     <div id="scrollThumbH" class="scroll-thumb"></div>
   </div>

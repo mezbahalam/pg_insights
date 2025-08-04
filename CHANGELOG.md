@@ -7,6 +7,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2025-08-04
+
+### Added
+- **Advanced Query Comparison Feature**: Compare two query executions side-by-side with comprehensive analysis
+  - Visual comparison interface with detailed metrics table
+  - Automatic performance winner determination
+  - Intelligent bottleneck detection and optimization recommendations
+  - Plan structure analysis with node count, depth, and scan methods
+  - Memory usage, parallel workers, and index utilization tracking
+  - Three plan view modes: side-by-side, overlay, and diff
+- **Enhanced Performance Analysis View**:
+  - Performance scoring system (Excellent/Good/Fair/Poor)
+  - Real-time efficiency calculations
+  - Interactive performance badges with tooltips
+  - Visual timing bars with animations
+  - Actionable optimization suggestions
+- **Query History Bar**: 
+  - Collapsible history panel showing recent query executions
+  - Multi-select functionality for comparison
+  - Performance indicators for each historical query
+  - Quick access to past analyses
+- **Comprehensive Metrics Extraction**:
+  - Planning and execution time breakdown
+  - Row counts (returned vs scanned)
+  - Memory usage and sort methods
+  - Parallel worker utilization
+  - Index usage and scan types
+  - Join types and plan complexity
+
+### Enhanced
+- **Controller Improvements**:
+  - Added `compare` action with robust error handling
+  - Enhanced metrics extraction from PostgreSQL execution plans
+  - Improved performance calculations and analysis
+- **JavaScript Enhancements**:
+  - Modular query comparison system
+  - Dynamic UI state management
+  - Smooth animations and transitions
+  - Better error handling and user feedback
+- **UI/UX Improvements**:
+  - Responsive design for comparison views
+  - Loading states and empty states
+  - Visual performance indicators
+  - Interactive tooltips and notifications
+  - Disabled state handling for compare tab
+
+### Technical Improvements
+- Sophisticated performance scoring algorithms
+- Intelligent bottleneck detection system
+- Percentage-based metric comparisons
+- Enhanced plan data extraction methods
+- Optimized JavaScript event handling
+- Improved CSS organization and theming
+
 ## [0.3.2] - 2025-01-15
 
 ### Fixed

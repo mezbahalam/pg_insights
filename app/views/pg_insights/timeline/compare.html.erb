@@ -120,7 +120,7 @@
             <div class="panel-header">
               <h3>📊 Key Metrics</h3>
             </div>
-            <div class="metrics-table">
+            <div class="timeline-metrics-table">
               <% if @performance_comparison && @performance_comparison[:metrics] %>
                 <% @performance_comparison[:metrics].each do |metric, data| %>
                   <div class="metric-row">
@@ -529,8 +529,8 @@
   border-radius: 4px;
 }
 
-/* Metrics Table */
-.metrics-table {
+/* Timeline Metrics Table */
+.timeline-metrics-table {
   padding: var(--space-md);
 }
 

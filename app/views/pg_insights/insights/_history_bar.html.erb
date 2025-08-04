@@ -1,0 +1,33 @@
+<div id="query-history-bar" class="history-bar collapsed">
+  <div class="history-header" onclick="toggleHistoryBar()">
+    <div class="history-title">
+      <span class="history-icon">📊</span>
+      <span class="title-text">Recent Analyses</span>
+      <span class="history-count">(0)</span>
+    </div>
+    <div class="history-controls">
+      <span class="selected-count" style="display: none;">
+        <span id="selected-count">0</span> selected
+      </span>
+      <button id="compare-btn" class="btn-compare" style="display: none;" onclick="triggerCompare(event)">
+        ⚖️ Compare
+      </button>
+      <span class="expand-arrow">▼</span>
+    </div>
+  </div>
+  
+  <div class="history-content">
+    <div class="history-loading">
+      <div class="loading-spinner"></div>
+      <span>Loading recent queries...</span>
+    </div>
+    
+    <div class="history-items" style="display: none;">
+    </div>
+    
+    <div class="history-empty" style="display: none;">
+      <div class="empty-icon">🔍</div>
+      <span>No analyzed queries yet. Run some queries with the "Analyze" button!</span>
+    </div>
+  </div>
+</div> 
