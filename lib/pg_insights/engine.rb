@@ -10,10 +10,18 @@ module PgInsights
       app.config.assets.precompile += %w[
         pg_insights/application.css
         pg_insights/application.js
+        pg_insights/analysis.css
         pg_insights/health.css
         pg_insights/health.js
         pg_insights/results.css
         pg_insights/results.js
+        pg_insights/query_comparison.js
+        pg_insights/plan_performance.js
+        pg_insights/results/view_toggles.js
+        pg_insights/results/chart_renderer.js
+        pg_insights/results/table_manager.js
+        chartkick.js
+        Chart.bundle.js
       ]
     end
 

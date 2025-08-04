@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2025-08-04
+
+### Fixed
+- **Asset Precompilation**: Fixed production asset precompilation errors
+  - Added missing `analysis.css` to precompiled assets list
+  - Added all JavaScript files from results subdirectory (`view_toggles.js`, `chart_renderer.js`, `table_manager.js`)
+  - Added external library assets (`chartkick.js`, `Chart.bundle.js`) to precompilation
+  - Resolved "Asset was not declared to be precompiled in production" errors
+  - Ensures all required assets are properly compiled for production deployment
+
 ## [0.4.0] - 2025-08-04
 
 ### Added
