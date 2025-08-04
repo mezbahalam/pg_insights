@@ -323,8 +323,20 @@ module PgInsights
     end
 
     def calculate_efficiency_score(execution)
-      return "N/A" unless execution.query_cost && execution.result_rows_count && execution.result_rows_count > 0
-      score = execution.query_cost / execution.result_rows_count
+      rows = execution.result_rows_count
+
+      # If no result rows, try to get from execution plan
+      if !rows || rows == 0
+        if execution.execution_plan.present?
+          plan_data = execution.execution_plan.is_a?(Array) ? execution.execution_plan[0] : execution.execution_plan
+          if plan_data && plan_data["Plan"]
+            rows = plan_data["Plan"]["Actual Rows"]
+          end
+        end
+      end
+
+      return "N/A" unless execution.query_cost && rows && rows > 0
+      score = execution.query_cost / rows
       score.round(2)
     end
   end

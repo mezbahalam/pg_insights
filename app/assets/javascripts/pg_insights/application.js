@@ -1,5 +1,4 @@
 
-
 // PG Insights JavaScript
 document.addEventListener('DOMContentLoaded', function() {
   const InsightsApp = {

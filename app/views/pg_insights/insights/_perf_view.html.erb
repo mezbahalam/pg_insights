@@ -1,123 +1,244 @@
 <div id="perf-view" class="view-content" style="display: none;">
-  <div class="analysis-dashboard">
-    <!-- Performance Status Banner -->
-    <div class="perf-status-banner <%= execution.has_performance_issues? ? 'status-warning' : 'status-success' %>">
-      <div class="status-indicator">
-        <%= execution.has_performance_issues? ? '⚠️' : '✅' %>
-      </div>
-      <div class="status-content">
-        <div class="status-title">
-          <%= execution.has_performance_issues? ? 'Performance Issues Detected' : 'Excellent Performance!' %>
+  <div class="perf-dashboard">
+    <!-- Performance Status with Context -->
+    <div class="perf-header <%= execution.has_performance_issues? ? 'status-warning-header' : 'status-success-header' %>">
+      <div class="perf-status <%= execution.has_performance_issues? ? 'status-warning' : 'status-success' %>">
+        <span class="status-icon"><%= execution.has_performance_issues? ? '⚠' : '✓' %></span>
+        <div class="status-details">
+          <span class="status-text">
+            <%= execution.has_performance_issues? ? 'Performance Issues Detected' : 'Good Performance' %>
+          </span>
+          <span class="status-context">
+            <%= execution.total_time_ms ? "#{execution.total_time_ms.round(1)}ms execution" : '' %>
+            <% if execution.query_cost %>• Cost: <%= execution.query_cost.round(0) %><% end %>
+          </span>
         </div>
-        <div class="status-description">
-          <%= execution.has_performance_issues? ? 'Query could benefit from optimization' : 'Query executed efficiently with good performance' %>
-        </div>
-      </div>
-      <div class="status-rating">
-        <div class="rating-badge">
-          <%= get_performance_rating(execution.total_time_ms) %>
+        <div class="perf-rating-group">
+          <span class="perf-rating"><%= get_performance_rating(execution.total_time_ms) %></span>
+          <span class="perf-score"><%= calculate_overall_performance_score(execution) %>/100</span>
         </div>
       </div>
     </div>
 
-    <!-- Performance Metrics Dashboard -->
-    <div class="perf-metrics-dashboard">
-      <!-- Timing Breakdown -->
-      <div class="metrics-section">
-        <h4 class="section-title">⏱️ Execution Timing</h4>
-        <div class="timing-breakdown">
-          <div class="timing-item">
-            <div class="timing-label">Planning</div>
+    <!-- Enhanced Metrics Grid -->
+    <div class="perf-metrics-grid">
+      <!-- Enhanced Timing Section -->
+      <div class="metrics-group timing-group">
+        <div class="group-header">
+          <span class="header-title">Execution Timing</span>
+          <span class="header-insight">
+            <% if execution.planning_time_ms && execution.execution_time_ms %>
+              <%= planning_vs_execution_insight(execution.planning_time_ms, execution.execution_time_ms) %>
+            <% end %>
+          </span>
+        </div>
+        <div class="timing-bars">
+          <div class="timing-row">
+            <span class="timing-label">Planning</span>
             <div class="timing-bar-container">
               <div class="timing-bar planning-bar" style="width: <%= timing_percentage(execution.planning_time_ms, execution.total_time_ms) %>%"></div>
             </div>
-            <div class="timing-value"><%= execution.planning_time_ms ? "#{execution.planning_time_ms.round(1)}ms" : 'N/A' %></div>
+            <div class="timing-value-group">
+              <span class="timing-value"><%= execution.planning_time_ms ? "#{execution.planning_time_ms.round(1)}ms" : 'N/A' %></span>
+              <span class="timing-percentage">
+                <%= execution.planning_time_ms && execution.total_time_ms ? "(#{timing_percentage(execution.planning_time_ms, execution.total_time_ms).round(1)}%)" : '' %>
+              </span>
+            </div>
           </div>
-          <div class="timing-item">
-            <div class="timing-label">Execution</div>
+          <div class="timing-row">
+            <span class="timing-label">Execution</span>
             <div class="timing-bar-container">
               <div class="timing-bar execution-bar" style="width: <%= timing_percentage(execution.execution_time_ms, execution.total_time_ms) %>%"></div>
             </div>
-            <div class="timing-value"><%= execution.execution_time_ms ? "#{execution.execution_time_ms.round(1)}ms" : 'N/A' %></div>
+            <div class="timing-value-group">
+              <span class="timing-value"><%= execution.execution_time_ms ? "#{execution.execution_time_ms.round(1)}ms" : 'N/A' %></span>
+              <span class="timing-percentage">
+                <%= execution.execution_time_ms && execution.total_time_ms ? "(#{timing_percentage(execution.execution_time_ms, execution.total_time_ms).round(1)}%)" : '' %>
+              </span>
+            </div>
           </div>
-          <div class="timing-total">
-            <div class="timing-label total-label">Total Time</div>
-            <div class="timing-value total-value"><%= execution.total_time_ms ? "#{execution.total_time_ms.round(1)}ms" : 'N/A' %></div>
+          <div class="timing-row total-row">
+            <span class="timing-label">Total</span>
+            <span class="timing-total-value">
+              <%= execution.total_time_ms ? "#{execution.total_time_ms.round(1)}ms" : 'N/A' %>
+              <span class="timing-benchmark">
+                <%= performance_benchmark_text(execution.total_time_ms) %>
+              </span>
+            </span>
           </div>
         </div>
       </div>
 
-      <!-- Key Performance Indicators -->
-      <div class="metrics-section">
-        <h4 class="section-title">📊 Key Metrics</h4>
-        <div class="kpi-grid">
-          <div class="kpi-card cost-card">
-            <div class="kpi-icon">💰</div>
-            <div class="kpi-content">
-              <div class="kpi-value"><%= execution.query_cost ? execution.query_cost.round(1) : 'N/A' %></div>
-              <div class="kpi-label">Query Cost</div>
-              <div class="kpi-hint">Lower is better</div>
-            </div>
-          </div>
-          <div class="kpi-card rows-card">
-            <div class="kpi-icon">📋</div>
-            <div class="kpi-content">
-              <div class="kpi-value"><%= execution.result_rows_count || 'N/A' %></div>
-              <div class="kpi-label">Rows Returned</div>
-              <div class="kpi-hint"><%= execution.result_columns_count %> columns</div>
-            </div>
-          </div>
-          <div class="kpi-card efficiency-card">
-            <div class="kpi-icon">⚡</div>
-            <div class="kpi-content">
-              <div class="kpi-value"><%= calculate_efficiency_score(execution) %></div>
-              <div class="kpi-label">Efficiency</div>
-              <div class="kpi-hint">Cost per row</div>
-            </div>
-          </div>
+      <!-- Enhanced Key Metrics Section -->
+      <div class="metrics-group">
+        <div class="group-header">
+          <span class="header-title">Key Metrics</span>
+          <span class="header-insight">Query Profile</span>
         </div>
-      </div>
-
-      <!-- Optimization Analysis -->
-      <div class="metrics-section">
-        <h4 class="section-title">💡 Analysis & Recommendations</h4>
-        <% if execution.performance_insights.present? && execution.performance_insights['suggestions']&.any? %>
-          <div class="recommendations-list">
-            <% execution.performance_insights['suggestions'].each_with_index do |suggestion, index| %>
-              <div class="recommendation-item">
-                <div class="rec-number"><%= index + 1 %></div>
-                <div class="rec-content">
-                  <div class="rec-text"><%= suggestion %></div>
+        <div class="perf-metrics-table">
+          <div class="metric-row">
+            <span class="metric-label">Query Cost</span>
+            <div class="metric-value-group">
+              <span class="metric-value"><%= execution.query_cost ? number_with_delimiter(execution.query_cost.round(0)) : 'N/A' %></span>
+              <span class="metric-threshold"><%= cost_threshold_indicator(execution.query_cost) %></span>
+            </div>
+          </div>
+          <div class="metric-row">
+            <span class="metric-label">Rows Returned</span>
+            <div class="metric-value-group">
+              <span class="metric-value"><%= execution.result_rows_count || extract_rich_plan_metrics(execution)[:rows_returned] || 'N/A' %></span>
+              <% if execution.result_columns_count %>
+                <span class="metric-context"><%= execution.result_columns_count %> cols</span>
+              <% end %>
+            </div>
+          </div>
+          <div class="metric-row">
+            <span class="metric-label">Efficiency</span>
+            <div class="metric-value-group">
+              <span class="metric-value"><%= calculate_efficiency_score(execution) %></span>
+              <span class="metric-context">cost/row</span>
+            </div>
+          </div>
+          <% if execution.execution_plan.present? %>
+            <% plan_metrics = extract_rich_plan_metrics(execution) %>
+            <% if plan_metrics[:memory_usage_kb] && plan_metrics[:memory_usage_kb] > 0 %>
+              <div class="metric-row">
+                <span class="metric-label">Peak Memory</span>
+                <div class="metric-value-group">
+                  <span class="metric-value"><%= format_memory_size(plan_metrics[:memory_usage_kb]) %></span>
+                  <span class="metric-threshold"><%= memory_threshold_indicator(plan_metrics[:memory_usage_kb]) %></span>
                 </div>
               </div>
             <% end %>
-          </div>
-        <% else %>
-          <div class="optimization-success">
-            <div class="success-visual">
-              <div class="success-checkmark">✓</div>
-              <div class="success-message">
-                <div class="success-primary">Well-optimized query!</div>
-                <div class="success-secondary">No performance bottlenecks detected</div>
+            <% if plan_metrics[:workers_launched] && plan_metrics[:workers_launched] > 0 %>
+              <div class="metric-row">
+                <span class="metric-label">Parallelization</span>
+                <div class="metric-value-group">
+                  <span class="metric-value"><%= "#{plan_metrics[:workers_launched]}/#{plan_metrics[:workers_planned]}" %></span>
+                  <span class="metric-context">
+                    <%= "#{((plan_metrics[:workers_launched].to_f / plan_metrics[:workers_planned]) * 100).round(0)}% util" %>
+                  </span>
+                </div>
+              </div>
+            <% end %>
+            <div class="metric-row">
+              <span class="metric-label">I/O Efficiency</span>
+              <div class="metric-value-group">
+                <span class="metric-value">
+                  <%= plan_metrics[:rows_scanned] && plan_metrics[:rows_returned] ? 
+                      "#{((plan_metrics[:rows_returned].to_f / plan_metrics[:rows_scanned]) * 100).round(1)}%" : 'N/A' %>
+                </span>
+                <span class="metric-context">
+                  <%= plan_metrics[:rows_scanned] ? "#{number_with_delimiter(plan_metrics[:rows_scanned])} scanned" : '' %>
+                </span>
               </div>
             </div>
-            <div class="performance-highlights">
-              <div class="highlight-item">
-                <span class="highlight-icon">⚡</span>
-                <span>Fast execution time</span>
-              </div>
-              <div class="highlight-item">
-                <span class="highlight-icon">🎯</span>
-                <span>Efficient resource usage</span>
-              </div>
-              <div class="highlight-item">
-                <span class="highlight-icon">🏆</span>
-                <span>Good query planning</span>
-              </div>
-            </div>
-          </div>
-        <% end %>
+          <% end %>
+        </div>
       </div>
+
+      <!-- Enhanced Performance Analysis Section -->
+      <% if execution.execution_plan.present? %>
+        <div class="metrics-group analysis-group">
+          <div class="group-header">
+            <span class="header-title">Performance Analysis</span>
+            <span class="header-insight">Optimization Score</span>
+          </div>
+          <% advanced_metrics = calculate_advanced_metrics(extract_rich_plan_metrics(execution)) %>
+          <div class="analysis-table">
+            <div class="analysis-row">
+              <span class="analysis-metric">I/O Efficiency</span>
+              <span class="analysis-score <%= score_css_class(advanced_metrics[:io_efficiency]) %>"><%= advanced_metrics[:io_efficiency] %></span>
+              <div class="analysis-details">
+                <span class="analysis-desc">Row selectivity</span>
+                <span class="analysis-impact">
+                  <%= io_efficiency_impact(extract_rich_plan_metrics(execution)) %>
+                </span>
+              </div>
+            </div>
+            <div class="analysis-row">
+              <span class="analysis-metric">Memory Usage</span>
+              <span class="analysis-score <%= score_css_class(advanced_metrics[:memory_efficiency]) %>"><%= advanced_metrics[:memory_efficiency] %></span>
+              <div class="analysis-details">
+                <span class="analysis-desc">Resource efficiency</span>
+                <span class="analysis-impact">
+                  <%= memory_efficiency_impact(extract_rich_plan_metrics(execution)) %>
+                </span>
+              </div>
+            </div>
+            <div class="analysis-row">
+              <span class="analysis-metric">Parallelization</span>
+              <span class="analysis-score <%= score_css_class(advanced_metrics[:parallelization]) %>"><%= advanced_metrics[:parallelization] %></span>
+              <div class="analysis-details">
+                <span class="analysis-desc">Worker utilization</span>
+                <span class="analysis-impact">
+                  <%= parallelization_impact(extract_rich_plan_metrics(execution)) %>
+                </span>
+              </div>
+            </div>
+            <div class="analysis-row">
+              <span class="analysis-metric">Index Usage</span>
+              <span class="analysis-score <%= score_css_class(advanced_metrics[:index_utilization]) %>"><%= advanced_metrics[:index_utilization] %></span>
+              <div class="analysis-details">
+                <span class="analysis-desc">Access efficiency</span>
+                <span class="analysis-impact">
+                  <%= index_usage_impact(extract_rich_plan_metrics(execution)) %>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% end %>
     </div>
+
+    <!-- Smart Recommendations Section -->
+    <% if execution.performance_insights.present? && execution.performance_insights['suggestions']&.any? %>
+      <div class="recommendations-section">
+        <div class="recommendations-header">
+          <div class="group-header">
+            <span class="header-title">Optimization Recommendations</span>
+            <span class="header-insight"><%= execution.performance_insights['suggestions'].length %> action items</span>
+          </div>
+        </div>
+        <div class="recommendations-grid">
+          <% execution.performance_insights['suggestions'].each_with_index do |suggestion, index| %>
+            <div class="recommendation-card">
+              <div class="rec-priority">
+                <span class="priority-indicator <%= recommendation_priority_class(suggestion, index) %>">
+                  <%= recommendation_priority_text(suggestion, index) %>
+                </span>
+                <span class="rec-impact">
+                  <%= recommendation_impact_estimate(suggestion) %>
+                </span>
+              </div>
+              <div class="rec-content">
+                <span class="rec-text"><%= suggestion %></span>
+                <div class="rec-actions">
+                  <span class="rec-hint"><%= recommendation_hint(suggestion) %></span>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    <% else %>
+      <div class="no-recommendations-section">
+        <div class="group-header">
+          <span class="header-title">Performance Status</span>
+          <span class="header-insight">Well optimized</span>
+        </div>
+        <div class="no-recommendations-content">
+          <div class="performance-badges">
+            <span class="perf-badge excellent">Fast Execution</span>
+            <span class="perf-badge good">Efficient Resource Usage</span>
+            <span class="perf-badge excellent">Good Query Plan</span>
+          </div>
+          <p class="optimization-summary">
+            This query is performing well with no critical optimization opportunities identified.
+            Monitor execution patterns for any performance degradation over time.
+          </p>
+        </div>
+      </div>
+    <% end %>
   </div>
 </div> 

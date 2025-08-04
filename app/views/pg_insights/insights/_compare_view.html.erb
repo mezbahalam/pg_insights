@@ -1,6 +1,5 @@
 <div id="compare-view" class="view-content" style="display: none;">
   <div class="compare-container">
-    <!-- Query Selection Header -->
     <div class="compare-header">
       <div class="query-selector">
         <div class="query-card query-a">
@@ -30,13 +29,10 @@
       </div>
     </div>
 
-    <!-- Comparison Results -->
     <div id="comparison-results" class="comparison-results" style="display: none;">
-      <!-- Enhanced Performance Dashboard -->
       <div class="performance-comparison">
         <h4>⚡ Performance Metrics</h4>
         
-        <!-- Quick Stats Overview -->
         <div class="metrics-overview">
           <div class="metric-card" id="time-metric">
             <div class="metric-label">Execution Time</div>
@@ -79,7 +75,6 @@
           </div>
         </div>
 
-        <!-- Detailed Metrics Table -->
         <div class="detailed-metrics">
           <h5>Detailed Breakdown</h5>
           <div class="metrics-table-wrapper">
@@ -94,14 +89,12 @@
                 </tr>
               </thead>
               <tbody id="metrics-table-body">
-                <!-- Dynamically populated -->
               </tbody>
             </table>
           </div>
         </div>
       </div>
 
-      <!-- Winner Summary -->
       <div class="winner-summary" id="winner-summary">
         <div class="winner-badge">
           <span class="winner-icon">🏆</span>
@@ -109,11 +102,9 @@
         </div>
       </div>
 
-      <!-- Enhanced Plan Comparison -->
       <div class="plans-comparison">
         <h4>🌳 Execution Plan Analysis</h4>
         
-        <!-- Plan Overview -->
         <div class="plan-overview">
           <div class="plan-stats">
             <div class="stat-item">
@@ -143,7 +134,6 @@
           </div>
         </div>
 
-        <!-- Side by Side Plans -->
         <div class="plans-grid" id="side-by-side-view">
           <div class="plan-column">
             <div class="plan-header">
@@ -154,7 +144,6 @@
               </div>
             </div>
             <div class="plan-content" id="plan-a-content">
-              <!-- Plan tree content -->
             </div>
           </div>
           <div class="plan-column">
@@ -166,12 +155,10 @@
               </div>
             </div>
             <div class="plan-content" id="plan-b-content">
-              <!-- Plan tree content -->
             </div>
           </div>
         </div>
 
-        <!-- Plan Overlay View -->
         <div class="plan-overlay" id="overlay-view" style="display: none;">
           <div class="overlay-controls">
             <div class="overlay-legend">
@@ -196,26 +183,20 @@
           </div>
           
           <div class="overlay-content" id="overlay-content">
-            <!-- Populated by JavaScript -->
           </div>
         </div>
 
-        <!-- Plan Differences View -->
         <div class="plan-differences" id="diff-view" style="display: none;">
           <div class="diff-summary" id="diff-summary">
-            <!-- Populated by JavaScript -->
           </div>
           <div class="diff-details" id="diff-details">
-            <!-- Populated by JavaScript -->
           </div>
         </div>
       </div>
 
-      <!-- Advanced Optimization Insights -->
       <div class="insights-comparison" id="insights-section">
         <h4>💡 Optimization Analysis</h4>
         
-        <!-- Optimization Score -->
         <div class="optimization-score">
           <div class="score-card">
             <div class="score-header">Query A Optimization</div>
@@ -235,59 +216,49 @@
           </div>
         </div>
 
-        <!-- Key Findings -->
         <div class="findings-section">
           <h5>Key Findings</h5>
           <div class="findings-grid">
             <div class="finding-category">
               <h6>🚀 Performance Issues</h6>
               <ul id="performance-issues">
-                <!-- Populated by JavaScript -->
               </ul>
             </div>
             
             <div class="finding-category">
               <h6>📊 Index Usage</h6>
               <ul id="index-findings">
-                <!-- Populated by JavaScript -->
               </ul>
             </div>
             
             <div class="finding-category">
               <h6>🔧 Optimization Opportunities</h6>
               <ul id="optimization-opportunities">
-                <!-- Populated by JavaScript -->
               </ul>
             </div>
           </div>
         </div>
 
-        <!-- Recommendations -->
         <div class="recommendations-section">
           <h5>Recommended Actions</h5>
           <div class="recommendations-list" id="recommendations-list">
-            <!-- Dynamically populated recommendations -->
           </div>
         </div>
 
-        <!-- Traditional Insights -->
         <div class="insights-list" id="insights-list">
-          <!-- Dynamically populated insights -->
         </div>
       </div>
     </div>
 
-    <!-- Loading State -->
     <div id="comparison-loading" class="comparison-loading" style="display: none;">
       <div class="loading-spinner"></div>
       <p>Comparing queries...</p>
     </div>
 
-    <!-- Empty State -->
     <div id="comparison-empty" class="comparison-empty">
       <div class="empty-icon">⚖️</div>
       <h3>Ready to Compare</h3>
-      <p>Select 2 queries from the history bar above to start comparing their performance and execution plans.</p>
+      <p>Run some queries with the "Analyze" button first, then select 2 queries from the history bar to start comparing their performance and execution plans.</p>
     </div>
   </div>
 </div> 

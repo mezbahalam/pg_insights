@@ -233,6 +233,9 @@ module PgInsights
       }
 
       if execution.success?
+        # Include rich metrics for enhanced views
+        response[:metrics] = extract_metrics(execution)
+
         if execution.has_result_data?
           response[:result] = {
             rows: execution.result_data["rows"],
@@ -308,14 +311,24 @@ module PgInsights
     end
 
     def extract_metrics(execution)
-      {
+      base_metrics = {
         total_time_ms: execution.total_time_ms,
         planning_time_ms: execution.planning_time_ms,
         execution_time_ms: execution.execution_time_ms,
-        query_cost: execution.query_cost,
-        rows_returned: execution.result_rows_count,
-        rows_scanned: extract_rows_scanned(execution)
+        query_cost: execution.query_cost
       }
+
+      # For queries with execution plans (EXPLAIN ANALYZE), extract from plan
+      if execution.execution_plan.present?
+        plan_metrics = extract_plan_metrics(execution)
+        base_metrics.merge(plan_metrics)
+      else
+        # For regular SELECT queries, use result data
+        base_metrics.merge(
+        rows_returned: execution.result_rows_count,
+          rows_scanned: nil
+        )
+      end
     end
 
     def calculate_performance_diff(exec_a, exec_b)
@@ -388,6 +401,142 @@ module PgInsights
 
       plan = execution.execution_plan.is_a?(Array) ? execution.execution_plan[0] : execution.execution_plan
       check_for_seq_scan(plan&.dig("Plan"))
+    end
+
+    def extract_plan_metrics(execution)
+      plan_data = execution.execution_plan.is_a?(Array) ? execution.execution_plan[0] : execution.execution_plan
+      return {} unless plan_data && plan_data["Plan"]
+
+      root_plan = plan_data["Plan"]
+
+      {
+        rows_returned: root_plan["Actual Rows"],
+        rows_scanned: extract_total_rows_scanned(root_plan),
+        workers_planned: extract_workers_info(root_plan)[:planned],
+        workers_launched: extract_workers_info(root_plan)[:launched],
+        memory_usage_kb: extract_peak_memory_usage(root_plan),
+        sort_methods: extract_sort_methods(root_plan),
+        index_usage: extract_index_usage(root_plan),
+        node_count: count_plan_nodes(root_plan),
+        join_types: extract_join_types(root_plan),
+        scan_types: extract_scan_types(root_plan)
+      }
+    end
+
+    def extract_workers_info(node, workers_info = { planned: 0, launched: 0 })
+      return workers_info unless node
+
+      if node["Workers Planned"]
+        workers_info[:planned] = [ workers_info[:planned], node["Workers Planned"] ].max
+      end
+
+      if node["Workers Launched"]
+        workers_info[:launched] = [ workers_info[:launched], node["Workers Launched"] ].max
+      end
+
+      if node["Plans"]&.any?
+        node["Plans"].each { |child| extract_workers_info(child, workers_info) }
+      end
+
+      workers_info
+    end
+
+    def extract_peak_memory_usage(node, max_memory = 0)
+      return max_memory unless node
+
+      if node["Peak Memory Usage"]
+        max_memory = [ max_memory, node["Peak Memory Usage"] ].max
+      end
+
+      if node["Plans"]&.any?
+        node["Plans"].each { |child| max_memory = extract_peak_memory_usage(child, max_memory) }
+      end
+
+      max_memory
+    end
+
+    def extract_sort_methods(node, methods = Set.new)
+      return methods.to_a unless node
+
+      if node["Sort Method"]
+        methods.add(node["Sort Method"])
+      end
+
+      if node["Plans"]&.any?
+        node["Plans"].each { |child| extract_sort_methods(child, methods) }
+      end
+
+      methods.to_a
+    end
+
+    def extract_index_usage(node, indexes = Set.new)
+      return indexes.to_a unless node
+
+      if node["Index Name"]
+        indexes.add(node["Index Name"])
+      end
+
+      if node["Plans"]&.any?
+        node["Plans"].each { |child| extract_index_usage(child, indexes) }
+      end
+
+      indexes.to_a
+    end
+
+    def count_plan_nodes(node)
+      return 0 unless node
+
+      count = 1
+      if node["Plans"]&.any?
+        count += node["Plans"].sum { |child| count_plan_nodes(child) }
+      end
+      count
+    end
+
+    def extract_join_types(node, types = Set.new)
+      return types.to_a unless node
+
+      if node["Node Type"]&.include?("Join")
+        join_type = node["Join Type"] ? "#{node['Join Type']} #{node['Node Type']}" : node["Node Type"]
+        types.add(join_type)
+      end
+
+      if node["Plans"]&.any?
+        node["Plans"].each { |child| extract_join_types(child, types) }
+      end
+
+      types.to_a
+    end
+
+    def extract_scan_types(node, types = Set.new)
+      return types.to_a unless node
+
+      if node["Node Type"]&.include?("Scan")
+        types.add(node["Node Type"])
+      end
+
+      if node["Plans"]&.any?
+        node["Plans"].each { |child| extract_scan_types(child, types) }
+      end
+
+      types.to_a
+    end
+
+    def extract_total_rows_scanned(node)
+      return 0 unless node
+
+      scanned_rows = 0
+
+      # Count rows from scan operations
+      if node["Node Type"]&.include?("Scan") && node["Actual Rows"]
+        scanned_rows += node["Actual Rows"] || 0
+      end
+
+      if node["Plans"]&.any?
+        scanned_rows += node["Plans"].sum { |child| extract_total_rows_scanned(child) }
+      end
+
+      scanned_rows
     end
 
     def check_for_seq_scan(node)

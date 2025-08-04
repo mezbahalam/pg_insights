@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', function() {
     init() {
       this.bindEvents();
       this.loadQueryHistory();
+      this.initializeCompareTab();
     },
     
     bindEvents() {
@@ -107,26 +108,32 @@ document.addEventListener('DOMContentLoaded', function() {
     
     updateSelectionUI() {
       const selectedCount = this.selectedQueries.length;
+      
+      // Update history bar elements
       const countEl = document.getElementById('selected-count');
       const selectedCountEl = document.querySelector('.selected-count');
       const compareBtnEl = document.getElementById('compare-btn');
-      const compareTabEl = document.getElementById('compare-tab');
       
-      if (selectedCount > 0) {
-        countEl.textContent = selectedCount;
-        selectedCountEl.style.display = 'inline';
+      if (countEl) countEl.textContent = selectedCount;
+      if (selectedCountEl) selectedCountEl.style.display = selectedCount > 0 ? 'inline' : 'none';
+      if (compareBtnEl) compareBtnEl.style.display = selectedCount === 2 ? 'inline-block' : 'none';
+      
+      // Update compare tab state
+      this.updateCompareTabState(selectedCount);
+    },
+
+    updateCompareTabState(selectedCount) {
+      const compareTabEl = document.getElementById('compare-tab');
+      if (!compareTabEl) return;
         
         if (selectedCount === 2) {
-          compareBtnEl.style.display = 'inline-block';
-          compareTabEl.style.display = 'inline-flex';
+        compareTabEl.classList.remove('disabled');
+        compareTabEl.title = 'Compare selected queries';
         } else {
-          compareBtnEl.style.display = 'none';
-          compareTabEl.style.display = 'none';
-        }
-      } else {
-        selectedCountEl.style.display = 'none';
-        compareBtnEl.style.display = 'none';
-        compareTabEl.style.display = 'none';
+        compareTabEl.classList.add('disabled');
+        compareTabEl.title = selectedCount === 0 
+          ? 'Select 2 queries from history to compare' 
+          : 'Select exactly 2 queries to compare';
       }
     },
     
@@ -151,7 +158,6 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
       }
       
-      // Switch to compare tab
       this.activateCompareTab();
       this.loadComparisonInterface();
     },
@@ -162,11 +168,16 @@ document.addEventListener('DOMContentLoaded', function() {
       
       // Activate compare tab
       const compareTab = document.getElementById('compare-tab');
+      if (compareTab) {
       compareTab.classList.add('active');
+      }
       
       // Hide all views, show compare view
       document.querySelectorAll('.view-content').forEach(view => view.style.display = 'none');
-      document.getElementById('compare-view').style.display = 'block';
+      const compareView = document.getElementById('compare-view');
+      if (compareView) {
+        compareView.style.display = 'block';
+      }
     },
     
     loadComparisonInterface() {
@@ -377,22 +388,103 @@ document.addEventListener('DOMContentLoaded', function() {
       ));
 
       // Planning Time
+      const planningDiff = this.calculatePercentageDifference(
+        execA.metrics.planning_time_ms, 
+        execB.metrics.planning_time_ms
+      );
       tbody.appendChild(createMetricRow(
         '🧠 Planning Time',
         execA.metrics.planning_time_ms ? `${execA.metrics.planning_time_ms}ms` : null,
         execB.metrics.planning_time_ms ? `${execB.metrics.planning_time_ms}ms` : null,
-        null,
+        planningDiff,
         'Query Complexity'
       ));
 
       // Execution Time
+      const executionDiff = this.calculatePercentageDifference(
+        execA.metrics.execution_time_ms, 
+        execB.metrics.execution_time_ms
+      );
       tbody.appendChild(createMetricRow(
         '⚡ Execution Time',
         execA.metrics.execution_time_ms ? `${execA.metrics.execution_time_ms}ms` : null,
         execB.metrics.execution_time_ms ? `${execB.metrics.execution_time_ms}ms` : null,
-        null,
+        executionDiff,
         'Resource Usage'
       ));
+
+      // Rows Scanned
+      tbody.appendChild(createMetricRow(
+        '🔍 Rows Scanned',
+        execA.metrics.rows_scanned || null,
+        execB.metrics.rows_scanned || null,
+        this.calculatePercentageDifference(execA.metrics.rows_scanned, execB.metrics.rows_scanned),
+        'I/O Efficiency'
+      ));
+
+      // Memory Usage
+      if (execA.metrics.memory_usage_kb || execB.metrics.memory_usage_kb) {
+        tbody.appendChild(createMetricRow(
+          '💾 Peak Memory',
+          execA.metrics.memory_usage_kb ? `${execA.metrics.memory_usage_kb} KB` : null,
+          execB.metrics.memory_usage_kb ? `${execB.metrics.memory_usage_kb} KB` : null,
+          this.calculatePercentageDifference(execA.metrics.memory_usage_kb, execB.metrics.memory_usage_kb),
+          'Resource Usage'
+        ));
+      }
+
+      // Workers
+      if (execA.metrics.workers_launched || execB.metrics.workers_launched) {
+        tbody.appendChild(createMetricRow(
+          '👥 Parallel Workers',
+          execA.metrics.workers_launched || 0,
+          execB.metrics.workers_launched || 0,
+          null,
+          'Parallelization'
+        ));
+      }
+
+      // Plan Complexity
+      tbody.appendChild(createMetricRow(
+        '🌳 Plan Nodes',
+        execA.metrics.node_count || null,
+        execB.metrics.node_count || null,
+        null,
+        'Complexity'
+      ));
+
+      // Scan Types
+      if (execA.metrics.scan_types?.length || execB.metrics.scan_types?.length) {
+        tbody.appendChild(createMetricRow(
+          '📋 Scan Methods',
+          execA.metrics.scan_types ? execA.metrics.scan_types.join(', ') : 'N/A',
+          execB.metrics.scan_types ? execB.metrics.scan_types.join(', ') : 'N/A',
+          null,
+          'Access Pattern'
+        ));
+      }
+
+      // Index Usage
+      if (execA.metrics.index_usage?.length || execB.metrics.index_usage?.length) {
+        tbody.appendChild(createMetricRow(
+          '🔑 Indexes Used',
+          execA.metrics.index_usage?.length ? `${execA.metrics.index_usage.length} indexes` : 'None',
+          execB.metrics.index_usage?.length ? `${execB.metrics.index_usage.length} indexes` : 'None',
+          null,
+          'Index Efficiency'
+        ));
+      }
+
+      // Sort Methods
+      if (execA.metrics.sort_methods?.length || execB.metrics.sort_methods?.length) {
+        tbody.appendChild(createMetricRow(
+          '🔢 Sort Methods',
+          execA.metrics.sort_methods ? execA.metrics.sort_methods.join(', ') : 'None',
+          execB.metrics.sort_methods ? execB.metrics.sort_methods.join(', ') : 'None',
+          null,
+          'Memory Efficiency'
+        ));
+      }
     },
     
     renderWinnerSummary(data) {
@@ -476,21 +568,92 @@ document.addEventListener('DOMContentLoaded', function() {
       const execA = data.executions.a;
       const execB = data.executions.b;
 
-      // Mock plan statistics (in real implementation, extract from execution_plan)
-      document.getElementById('nodes-a').textContent = '8';
-      document.getElementById('nodes-b').textContent = '6';
-      document.getElementById('depth-a').textContent = '4';
-      document.getElementById('depth-b').textContent = '3';
-      document.getElementById('scans-a').textContent = 'Index, Seq';
-      document.getElementById('scans-b').textContent = 'Index';
-
-      // Plan efficiency indicators
-      document.getElementById('efficiency-a').textContent = execA.metrics.total_time_ms < 100 ? 'Efficient' : 'Needs Review';
-      document.getElementById('efficiency-b').textContent = execB.metrics.total_time_ms < 100 ? 'Efficient' : 'Needs Review';
+      // Use actual extracted plan data
+      document.getElementById('nodes-a').textContent = execA.metrics.node_count || 'N/A';
+      document.getElementById('nodes-b').textContent = execB.metrics.node_count || 'N/A';
       
-      // Bottleneck detection
-      document.getElementById('bottleneck-a').textContent = execA.metrics.total_time_ms > 500 ? 'Seq Scan' : 'None';
-      document.getElementById('bottleneck-b').textContent = execB.metrics.total_time_ms > 500 ? 'Seq Scan' : 'None';
+      // Calculate depth from node count (rough approximation)
+      const depthA = execA.metrics.node_count ? Math.ceil(Math.log2(execA.metrics.node_count)) : 'N/A';
+      const depthB = execB.metrics.node_count ? Math.ceil(Math.log2(execB.metrics.node_count)) : 'N/A';
+      document.getElementById('depth-a').textContent = depthA;
+      document.getElementById('depth-b').textContent = depthB;
+      
+      // Show actual scan types
+      document.getElementById('scans-a').textContent = execA.metrics.scan_types?.join(', ') || 'N/A';
+      document.getElementById('scans-b').textContent = execB.metrics.scan_types?.join(', ') || 'N/A';
+
+      // Enhanced efficiency indicators
+      const efficiencyA = this.calculateEfficiencyScore(execA.metrics);
+      const efficiencyB = this.calculateEfficiencyScore(execB.metrics);
+      
+      document.getElementById('efficiency-a').textContent = efficiencyA;
+      document.getElementById('efficiency-b').textContent = efficiencyB;
+      
+      // Smart bottleneck detection
+      const bottleneckA = this.detectBottleneck(execA.metrics);
+      const bottleneckB = this.detectBottleneck(execB.metrics);
+      
+      document.getElementById('bottleneck-a').textContent = bottleneckA;
+      document.getElementById('bottleneck-b').textContent = bottleneckB;
+    },
+
+    calculateEfficiencyScore(metrics) {
+      if (!metrics.total_time_ms) return 'N/A';
+      
+      let score = 100;
+      
+      // Penalize based on time
+      if (metrics.total_time_ms > 5000) score -= 40;
+      else if (metrics.total_time_ms > 1000) score -= 20;
+      else if (metrics.total_time_ms > 500) score -= 10;
+      
+      // Bonus for parallel execution
+      if (metrics.workers_launched > 0) score += 10;
+      
+      // Penalty for high memory usage
+      if (metrics.memory_usage_kb > 50000) score -= 15;
+      
+      // Bonus for index usage
+      if (metrics.index_usage?.length > 0) score += 5;
+      
+      // Penalty for sequential scans
+      if (metrics.scan_types?.includes('Seq Scan')) score -= 10;
+      
+      // Penalty for external sorts
+      if (metrics.sort_methods?.includes('external merge')) score -= 15;
+      
+      score = Math.max(0, Math.min(100, score));
+      
+      if (score >= 85) return 'Excellent';
+      if (score >= 70) return 'Good';
+      if (score >= 50) return 'Fair';
+      return 'Needs Review';
+    },
+
+    detectBottleneck(metrics) {
+      const issues = [];
+      
+      if (metrics.scan_types?.includes('Seq Scan')) {
+        issues.push('Sequential Scans');
+      }
+      
+      if (metrics.sort_methods?.includes('external merge')) {
+        issues.push('Disk Sorting');
+      }
+      
+      if (metrics.memory_usage_kb > 100000) {
+        issues.push('High Memory');
+      }
+      
+      if (metrics.workers_planned > metrics.workers_launched) {
+        issues.push('Worker Shortage');
+      }
+      
+      if (!metrics.index_usage?.length && metrics.rows_scanned > 10000) {
+        issues.push('Missing Indexes');
+      }
+      
+      return issues.length ? issues.join(', ') : 'None';
     },
 
     renderOptimizationAnalysis(data) {
@@ -574,36 +737,128 @@ document.addEventListener('DOMContentLoaded', function() {
       const perfIssues = document.getElementById('performance-issues');
       perfIssues.innerHTML = '';
       
-      if (execA.metrics.total_time_ms > 500) {
-        perfIssues.innerHTML += '<li>Query A: Slow execution time</li>';
-      }
-      if (execB.metrics.total_time_ms > 500) {
-        perfIssues.innerHTML += '<li>Query B: Slow execution time</li>';
-      }
+      this.analyzePerformanceIssues(execA, 'A', perfIssues);
+      this.analyzePerformanceIssues(execB, 'B', perfIssues);
+      
       if (perfIssues.innerHTML === '') {
         perfIssues.innerHTML = '<li>No major performance issues detected</li>';
       }
 
-      // Index Usage
+      // Index Usage Analysis
       const indexFindings = document.getElementById('index-findings');
-      indexFindings.innerHTML = `
-        <li>Query A: Mixed index/sequential scans</li>
-        <li>Query B: Primarily index scans</li>
-        <li>Index usage efficiency: Good</li>
-      `;
+      indexFindings.innerHTML = '';
+      
+      this.analyzeIndexUsage(execA, execB, indexFindings);
 
       // Optimization Opportunities  
       const opportunities = document.getElementById('optimization-opportunities');
       opportunities.innerHTML = '';
       
-      if (execA.metrics.total_time_ms > execB.metrics.total_time_ms * 1.5) {
-        opportunities.innerHTML += '<li>Query A could benefit from Query B\'s approach</li>';
-      }
-      if (execB.metrics.total_time_ms > execA.metrics.total_time_ms * 1.5) {
-        opportunities.innerHTML += '<li>Query B could benefit from Query A\'s approach</li>';
-      }
+      this.analyzeOptimizationOpportunities(execA, execB, opportunities);
+      
       if (opportunities.innerHTML === '') {
         opportunities.innerHTML = '<li>Both queries are well-optimized</li>';
+      }
+    },
+
+    analyzePerformanceIssues(exec, label, container) {
+      const metrics = exec.metrics;
+      
+      if (metrics.total_time_ms > 5000) {
+        container.innerHTML += `<li>Query ${label}: Very slow execution (${metrics.total_time_ms}ms)</li>`;
+      } else if (metrics.total_time_ms > 1000) {
+        container.innerHTML += `<li>Query ${label}: Slow execution time (${metrics.total_time_ms}ms)</li>`;
+      }
+      
+      if (metrics.memory_usage_kb > 100000) {
+        container.innerHTML += `<li>Query ${label}: High memory usage (${metrics.memory_usage_kb}KB)</li>`;
+      }
+      
+      if (metrics.sort_methods?.includes('external merge')) {
+        container.innerHTML += `<li>Query ${label}: Sorting spilled to disk</li>`;
+      }
+      
+      if (metrics.workers_planned > metrics.workers_launched) {
+        container.innerHTML += `<li>Query ${label}: Only ${metrics.workers_launched}/${metrics.workers_planned} parallel workers launched</li>`;
+      }
+      
+      if (metrics.scan_types?.includes('Seq Scan') && metrics.rows_scanned > 100000) {
+        container.innerHTML += `<li>Query ${label}: Large sequential scan (${metrics.rows_scanned} rows)</li>`;
+      }
+    },
+
+    analyzeIndexUsage(execA, execB, container) {
+      const indexCountA = execA.metrics.index_usage?.length || 0;
+      const indexCountB = execB.metrics.index_usage?.length || 0;
+      
+      if (indexCountA > 0) {
+        container.innerHTML += `<li>Query A: Uses ${indexCountA} index(es) - ${execA.metrics.index_usage.join(', ')}</li>`;
+      } else {
+        container.innerHTML += '<li>Query A: No indexes used (may cause performance issues)</li>';
+      }
+      
+      if (indexCountB > 0) {
+        container.innerHTML += `<li>Query B: Uses ${indexCountB} index(es) - ${execB.metrics.index_usage.join(', ')}</li>`;
+      } else {
+        container.innerHTML += '<li>Query B: No indexes used (may cause performance issues)</li>';
+      }
+      
+      const seqScanA = execA.metrics.scan_types?.includes('Seq Scan');
+      const seqScanB = execB.metrics.scan_types?.includes('Seq Scan');
+      
+      if (seqScanA && !seqScanB) {
+        container.innerHTML += '<li>Query B has better index utilization than Query A</li>';
+      } else if (seqScanB && !seqScanA) {
+        container.innerHTML += '<li>Query A has better index utilization than Query B</li>';
+      } else if (!seqScanA && !seqScanB) {
+        container.innerHTML += '<li>Both queries efficiently use indexes</li>';
+      }
+    },
+
+    analyzeOptimizationOpportunities(execA, execB, container) {
+      const timeDiffPct = Math.abs(execA.metrics.total_time_ms - execB.metrics.total_time_ms) / 
+                         Math.max(execA.metrics.total_time_ms, execB.metrics.total_time_ms) * 100;
+      
+      if (timeDiffPct > 50) {
+        if (execA.metrics.total_time_ms > execB.metrics.total_time_ms) {
+          container.innerHTML += '<li>Query A could benefit from Query B\'s execution strategy</li>';
+        } else {
+          container.innerHTML += '<li>Query B could benefit from Query A\'s execution strategy</li>';
+        }
+      }
+      
+      // Memory optimization opportunities
+      if (execA.metrics.memory_usage_kb > execB.metrics.memory_usage_kb * 2) {
+        container.innerHTML += '<li>Query A uses significantly more memory - consider optimizing</li>';
+      } else if (execB.metrics.memory_usage_kb > execA.metrics.memory_usage_kb * 2) {
+        container.innerHTML += '<li>Query B uses significantly more memory - consider optimizing</li>';
+      }
+      
+      // Parallel processing opportunities
+      if (execA.metrics.workers_launched === 0 && execA.metrics.total_time_ms > 1000) {
+        container.innerHTML += '<li>Query A could benefit from parallel execution</li>';
+      }
+      if (execB.metrics.workers_launched === 0 && execB.metrics.total_time_ms > 1000) {
+        container.innerHTML += '<li>Query B could benefit from parallel execution</li>';
+      }
+      
+      // Sort optimization
+      if (execA.metrics.sort_methods?.includes('external merge')) {
+        container.innerHTML += '<li>Query A: Increase work_mem to avoid disk-based sorting</li>';
+      }
+      if (execB.metrics.sort_methods?.includes('external merge')) {
+        container.innerHTML += '<li>Query B: Increase work_mem to avoid disk-based sorting</li>';
+      }
+      
+      // Index recommendations
+      const seqScanA = execA.metrics.scan_types?.includes('Seq Scan');
+      const seqScanB = execB.metrics.scan_types?.includes('Seq Scan');
+      
+      if (seqScanA && execA.metrics.rows_scanned > 10000) {
+        container.innerHTML += '<li>Query A: Consider adding indexes to eliminate sequential scans</li>';
+      }
+      if (seqScanB && execB.metrics.rows_scanned > 10000) {
+        container.innerHTML += '<li>Query B: Consider adding indexes to eliminate sequential scans</li>';
       }
     },
 
@@ -806,6 +1061,22 @@ document.addEventListener('DOMContentLoaded', function() {
       if (diff > 20) return 'Moderate';
       return 'Low';
     },
+
+    calculatePercentageDifference(valueA, valueB) {
+      if (!valueA || !valueB || valueA === valueB) return null;
+      
+      const numA = parseFloat(valueA);
+      const numB = parseFloat(valueB);
+      
+      if (isNaN(numA) || isNaN(numB)) return null;
+      
+      const percentDiff = Math.abs(((numB - numA) / numA) * 100);
+      const fasterQuery = numA < numB ? 'A' : 'B';
+      
+      if (percentDiff < 1) return null; // Less than 1% difference is negligible
+      
+      return `${percentDiff.toFixed(1)}% ${fasterQuery} faster`;
+    },
     
     updateHistoryCount(count) {
       document.querySelector('.history-count').textContent = `(${count})`;
@@ -828,6 +1099,23 @@ document.addEventListener('DOMContentLoaded', function() {
         <p>${message}</p>
       `;
       document.getElementById('comparison-empty').style.display = 'block';
+    },
+
+    initializeCompareTab() {
+      const compareTab = document.getElementById('compare-tab');
+      if (!compareTab || compareTab.dataset.initialized) return;
+      
+      compareTab.addEventListener('click', (e) => {
+        e.preventDefault();
+        
+        // Skip if disabled (let tooltip show help)
+        if (compareTab.classList.contains('disabled')) return;
+        
+        this.activateCompareTab();
+        this.loadComparisonInterface();
+      });
+      
+      compareTab.dataset.initialized = 'true';
     }
   };
   
