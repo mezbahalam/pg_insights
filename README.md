@@ -14,13 +14,25 @@
 
 PgInsights is a Rails engine that gives you a web dashboard for monitoring your PostgreSQL database performance. Think of it as a lightweight alternative to external monitoring tools that lives right inside your Rails app.
 
+<details>
+<summary>
+
 ## 🤔 Why I built this
 
-I got tired of switching between different tools to check database performance. Sometimes you just want to quickly see which indexes aren't being used, or find slow queries without setting up a whole monitoring infrastructure. 
+</summary>
+
+I got tired of switching between different tools to check database performance. Sometimes you just want to quickly see which indexes aren't being used, or find slow queries without setting up a whole monitoring infrastructure.
 
 PgInsights gives you that - a simple dashboard you can access at `/pg_insights` in your Rails app.
 
+</details>
+
+<details>
+<summary>
+
 ## 🎁 What you get
+
+</summary>
 
 <table>
 <tr>
@@ -36,7 +48,7 @@ PgInsights gives you that - a simple dashboard you can access at `/pg_insights` 
 </td>
 <td width="50%">
 
-### 🔍 Query Runner  
+### 🔍 Query Runner
 - Run your own SELECT queries safely
 - Built-in queries for common performance checks
 - Save queries you use frequently
@@ -65,7 +77,14 @@ PgInsights gives you that - a simple dashboard you can access at `/pg_insights` 
 - Caches results so repeated visits are fast
 - Configurable timeouts to prevent slow queries from hanging
 
+</details>
+
+<details>
+<summary>
+
 ## 📸 Screenshots
+
+</summary>
 
 <details>
 <summary>👀 Click to see the interface</summary>
@@ -107,7 +126,14 @@ Detailed comparison view showing parameter changes and performance differences.
 
 </details>
 
+</details>
+
+<details>
+<summary>
+
 ## ⏩ Quick Start
+
+</summary>
 
 Add to your Gemfile:
 
@@ -125,7 +151,14 @@ rails db:migrate
 
 That's it. Visit `/pg_insights` in your browser.
 
+</details>
+
+<details>
+<summary>
+
 ## ⚙️ Configuration
+
+</summary>
 
 The engine works out of the box, but you can customize it:
 
@@ -135,11 +168,11 @@ PgInsights.configure do |config|
   # === Background Jobs ===
   config.enable_background_jobs = true
   config.background_job_queue = :pg_insights_health
-  
+
   # === Health Check Settings ===
   config.health_cache_expiry = 5.minutes
   config.health_check_timeout = 10.seconds
-  
+
   # === Timeline & Snapshot Settings ===
   config.enable_snapshots = true                    # Enable timeline feature
   config.snapshot_frequency = 1.day                 # How often to collect snapshots
@@ -148,20 +181,27 @@ PgInsights.configure do |config|
 end
 ```
 
+</details>
+
+<details>
+<summary>
+
 ## 🔄 How Background Jobs Work
+
+</summary>
 
 > **Note:** PgInsights uses on-demand background jobs, not automatic scheduling.
 
 **When health checks run:**
 - ✅ When you visit the health dashboard `/pg_insights/health` and cached data is older than `health_cache_expiry` (default: 5 minutes)
-- ✅ When you click the "Refresh" button in the dashboard  
+- ✅ When you click the "Refresh" button in the dashboard
 - ✅ When you run `rails pg_insights:health_check` manually
 - ❌ **NOT automatically** - PgInsights doesn't run background jobs on its own
 
 **How caching works:**
 ```
 Visit at 2:00 PM → Runs health checks, caches results for 5 minutes
-Visit at 2:03 PM → Uses cached results (still fresh)  
+Visit at 2:03 PM → Uses cached results (still fresh)
 Visit at 2:06 PM → Data is stale, triggers new background jobs
 ```
 
@@ -174,7 +214,7 @@ If your app has background jobs (Sidekiq, Resque, etc.), PgInsights will use the
 rails pg_insights:status
 ```
 
-**Without background jobs**: Health checks run synchronously when you visit the page (slower but works)  
+**Without background jobs**: Health checks run synchronously when you visit the page (slower but works)
 **With background jobs**: Health checks run asynchronously (faster, non-blocking)
 
 **Optional: Automatic recurring checks**
@@ -197,7 +237,14 @@ Sidekiq::Cron::Job.create(
 
 **Note**: Even with automatic scheduling, the jobs are smart - they only run expensive queries if the cached data is actually stale.
 
+</details>
+
+<details>
+<summary>
+
 ## 💻 Usage
+
+</summary>
 
 Navigate to `/pg_insights` in your app. The interface is pretty straightforward:
 
@@ -209,7 +256,14 @@ Navigate to `/pg_insights` in your app. The interface is pretty straightforward:
 
 All queries are read-only (SELECT statements only) and have timeouts to prevent issues.
 
+</details>
+
+<details>
+<summary>
+
 ## 🛠️ Available rake tasks
+
+</summary>
 
 ```bash
 # Configuration & Status
@@ -236,27 +290,55 @@ rails pg_insights:seed_timeline      # Generate fake timeline data for testing
 rails pg_insights:sample_data        # Generate sample health check data
 ```
 
+</details>
+
+<details>
+<summary>
+
 ## 🔒 Safety
+
+</summary>
 
 - Only SELECT queries allowed
 - Query timeouts prevent long-running queries
 - Focuses on public schema by default
 - No modification of your data
 
+</details>
+
+<details>
+<summary>
+
 ## 🗑️ Uninstalling
+
+</summary>
 
 ```bash
 rails generate pg_insights:clean
 # Remove gem from Gemfile
 ```
 
+</details>
+
+<details>
+<summary>
+
 ## 📋 Requirements
+
+</summary>
 
 - Rails 6.1+
 - PostgreSQL
 - For slow query detection: pg_stat_statements extension (optional)
 
+</details>
+
+<details>
+<summary>
+
 ## 🤝 Contributing
+
+</summary>
 
 Found a bug or have an idea? Open an issue or send a pull request. The codebase is pretty straightforward.
 
@@ -269,9 +351,18 @@ bundle install
 bundle exec rake spec
 ```
 
+</details>
+
+<details>
+<summary>
+
 ## 📄 License
 
+</summary>
+
 MIT License. See [LICENSE](MIT-LICENSE) file.
+
+</details>
 
 ## 🙏 Special Thanks
 
@@ -279,7 +370,7 @@ MIT License. See [LICENSE](MIT-LICENSE) file.
 
 > *"Great mentors don't just teach you how to write code, they inspire you to build something meaningful."*
 
-**Special thanks to [Keith Doggett](https://github.com/keithdoggett) ([@keithdoggett](https://github.com/keithdoggett))**  
+**Special thanks to [Keith Doggett](https://github.com/keithdoggett) ([@keithdoggett](https://github.com/keithdoggett))**
 *Team Lead & Technical Mentor*
 
 </div>
